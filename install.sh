@@ -44,18 +44,16 @@ echo ""
 read -p "Install to /usr/local/bin? (y/N): " install_system
 if [[ $install_system =~ ^[Yy]$ ]]; then
     echo "Installing..."
-    sudo cp sapp /usr/local/bin/ 2>/dev/null || echo "  sapp: installed"
-    sudo cp sapphire /usr/local/bin/ 2>/dev/null || echo "  sapphire: installed"
+    sudo cp sapp /usr/local/bin/
+    sudo cp sapphire /usr/local/bin/
     
     # Optional tools (may not exist yet)
     if [ -f "spm" ]; then
         sudo cp spm /usr/local/bin/
-        echo "  spm: installed"
     fi
     
     if [ -f "sapphire-fmt" ]; then
         sudo cp sapphire-fmt /usr/local/bin/
-        echo "  sapphire-fmt: installed"
     fi
     
     echo "✓ Installed to /usr/local/bin"
