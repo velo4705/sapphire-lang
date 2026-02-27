@@ -98,14 +98,35 @@ sapp myprogram.spp
 Sapphire includes a built-in update system:
 
 ```bash
-# Check for updates
+# Check for updates (no authentication required)
 sapp --check-updates
 
 # Update to latest version
 sapp --update
 ```
 
-This will:
+### First-Time Update Setup
+
+The first time you run `sapp --update`, git may ask for your GitHub credentials. To avoid this:
+
+**Option 1: Use credential helper (recommended)**
+```bash
+cd sapphire-lang
+git config credential.helper store
+```
+
+After this, git will remember your credentials after the first use.
+
+**Option 2: Use the one-line installer**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Velocity4705/sapphire-lang/main/install.sh | bash
+```
+
+This will update your installation without requiring credentials.
+
+### What Update Does
+
+The update command will:
 - Pull the latest code from GitHub
 - Rebuild automatically
 - Preserve your local changes

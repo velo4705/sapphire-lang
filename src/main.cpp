@@ -26,17 +26,40 @@ void printUsage(const char* program) {
 
 void checkForUpdates() {
     std::cout << "Checking for updates...\n";
-    int result = system("git fetch origin main 2>/dev/null");
+    
+    // Read current version
+    std::string current_version = "1.0.0";
+    std::ifstream version_file("VERSION");
+    if (version_file.is_open()) {
+        std::getline(version_file, current_version);
+        version_file.close();
+    }
+    
+    // Check if in git repository
+    int result = system("git rev-parse --git-dir >/dev/null 2>&1");
     if (result != 0) {
-        std::cout << "✗ Could not check for updates (not in git repository)\n";
+        std::cout << "ℹ Not installed via git. To update, run:\n";
+        std::cout << "  curl -fsSL https://raw.githubusercontent.com/Velocity4705/sapphire-lang/main/install.sh | bash\n";
+        std::cout << "\nCurrent version: " << current_version << "\n";
+        std::cout << "Latest version: Check https://github.com/Velocity4705/sapphire-lang/releases\n";
         return;
     }
     
-    result = system("git rev-list HEAD...origin/main --count 2>/dev/null | grep -q '^0$'");
+    // Use ls-remote to check for updates without authentication
+    result = system("git ls-remote origin main >/dev/null 2>&1");
+    if (result != 0) {
+        std::cout << "✗ Could not check for updates. Check your internet connection.\n";
+        std::cout << "  Or check manually: https://github.com/Velocity4705/sapphire-lang\n";
+        return;
+    }
+    
+    // Compare local and remote commits
+    result = system("[ \"$(git rev-parse HEAD)\" = \"$(git ls-remote origin main | cut -f1)\" ]");
     if (result == 0) {
-        std::cout << "✓ You're already on the latest version!\n";
+        std::cout << "✓ You're already on the latest version! (v" << current_version << ")\n";
     } else {
         std::cout << "⚠ Updates available!\n";
+        std::cout << "  Current: v" << current_version << "\n";
         std::cout << "\nRun: sapp --update\n";
     }
 }
