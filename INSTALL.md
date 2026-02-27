@@ -110,6 +110,23 @@ This will:
 - Rebuild automatically
 - Preserve your local changes
 
+### Update Requirements
+
+The auto-update feature requires:
+- Installation via git (using the one-line installer or manual git clone)
+- Internet connection
+- Git installed on your system
+
+### If Not Installed via Git
+
+If you installed Sapphire without git, you'll see:
+```
+ℹ Not installed via git. To update, run:
+  curl -fsSL https://raw.githubusercontent.com/Velocity4705/sapphire-lang/main/install.sh | bash
+```
+
+Simply run the one-line installer again - it will update your installation.
+
 ## Manual Update
 
 If auto-update doesn't work:
