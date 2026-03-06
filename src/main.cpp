@@ -13,7 +13,7 @@
 void printUsage(const char* program) {
     (void)program;
     std::cout << "Sapphire Programming Language 💎\n";
-    std::cout << "Combining the best of Python, C++, Rust, Go, and more\n\n";
+    std::cout << "A Fast and Powerful Language built with simplicity on top.\n\n";
     std::cout << "Usage:\n";
     std::cout << "  sapp <file.spp>              # Run a program (interpreter)\n";
     std::cout << "  sapp compile <file.spp>      # Compile and show LLVM IR\n";
@@ -21,7 +21,6 @@ void printUsage(const char* program) {
     std::cout << "  sapp --update                # Update to latest version\n";
     std::cout << "  sapp --help                  # Show this help\n";
     std::cout << "\nNote: 'sapphire' is an alias for 'sapp'\n";
-    std::cout << "\nMilestone 4 COMPLETE - Memory Management! 🎉\n";
 }
 
 void checkForUpdates() {

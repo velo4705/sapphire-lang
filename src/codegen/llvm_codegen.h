@@ -33,10 +33,6 @@ class ReturnStmt;
  * LLVM Code Generator
  * 
  * Transforms Sapphire AST into LLVM IR, which is then compiled to native machine code.
- * This is the core of Milestone 3 - enabling Sapphire to be the second-fastest language.
- * 
- * Phase 1: Basic structure ✅
- * Phase 2: Expression generation 🚀
  */
 class LLVMCodeGen {
 public:
