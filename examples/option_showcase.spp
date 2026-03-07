@@ -1,0 +1,68 @@
+# Option Type Showcase - Sapphire v1.3.0
+
+print("╔════════════════════════════════════════════════════════╗")
+print("║  Sapphire Option<T> Type - Milestone 5 Phase 1        ║")
+print("╚════════════════════════════════════════════════════════╝\n")
+
+# Feature 1: Type-safe nullable values
+print("✓ Type-safe nullable values")
+let value = Some(42)
+let empty = None()
+print("  ", value, "and", empty, "\n")
+
+# Feature 2: Pattern matching
+print("✓ Pattern matching")
+match value:
+    Some(x) => print("  Matched Some(", x, ")")
+    None => print("  Matched None")
+print()
+
+# Feature 3: Safe unwrapping
+print("✓ Safe unwrapping")
+print("  value.unwrap():", value.unwrap())
+print("  empty.unwrap_or(0):", empty.unwrap_or(0), "\n")
+
+# Feature 4: Functional transformations
+print("✓ Functional transformations")
+fn triple(x):
+    return x * 3
+
+print("  Some(42).map(triple):", value.map(triple))
+print("  None().map(triple):", empty.map(triple), "\n")
+
+# Feature 5: Chained operations
+print("✓ Chained operations")
+fn safe_sqrt(x):
+    if x < 0:
+        return None()
+    return Some(x)
+
+fn safe_log(x):
+    if x <= 0:
+        return None()
+    return Some(x)
+
+let chain1 = Some(16).and_then(safe_sqrt).and_then(safe_log)
+let chain2 = Some(-4).and_then(safe_sqrt).and_then(safe_log)
+
+print("  Some(16) -> sqrt -> log:", chain1)
+print("  Some(-4) -> sqrt -> log:", chain2, "\n")
+
+# Feature 6: Real-world usage
+print("✓ Real-world usage")
+fn get_env(key):
+    if key == "HOME":
+        return Some("/home/user")
+    if key == "PATH":
+        return Some("/usr/bin")
+    return None()
+
+let home = get_env("HOME").unwrap_or("/tmp")
+let shell = get_env("SHELL").unwrap_or("/bin/sh")
+
+print("  HOME:", home)
+print("  SHELL:", shell, "\n")
+
+print("╔════════════════════════════════════════════════════════╗")
+print("║  All Option<T> features working perfectly!            ║")
+print("╚════════════════════════════════════════════════════════╝")

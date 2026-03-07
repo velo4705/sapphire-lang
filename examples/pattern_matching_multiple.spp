@@ -1,0 +1,15 @@
+# Multiple Patterns Per Arm Test
+
+fn classify_digit(n):
+    return match n:
+        0 | 1 | 2 => "low"
+        3 | 4 | 5 => "mid"
+        6 | 7 | 8 | 9 => "high"
+        _ => "not a digit"
+
+print("Testing multiple patterns:")
+print(classify_digit(0))
+print(classify_digit(1))
+print(classify_digit(4))
+print(classify_digit(8))
+print(classify_digit(10))

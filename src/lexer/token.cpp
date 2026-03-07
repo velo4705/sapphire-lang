@@ -42,6 +42,17 @@ std::string tokenTypeToString(TokenType type) {
         {TokenType::CATCH, "CATCH"},
         {TokenType::FINALLY, "FINALLY"},
         {TokenType::THROW, "THROW"},
+        {TokenType::TRAIT, "TRAIT"},
+        {TokenType::IMPL, "IMPL"},
+        {TokenType::SELF, "SELF"},
+        {TokenType::WHERE, "WHERE"},
+        {TokenType::DYN, "DYN"},
+        {TokenType::CHAN, "CHAN"},
+        {TokenType::GO, "GO"},
+        {TokenType::SELECT, "SELECT"},
+        {TokenType::CASE, "CASE"},
+        {TokenType::DEFAULT, "DEFAULT"},
+        {TokenType::MACRO, "MACRO"},
         
         // Operators
         {TokenType::PLUS, "PLUS"},
@@ -59,6 +70,9 @@ std::string tokenTypeToString(TokenType type) {
         {TokenType::GREATER_EQUAL, "GREATER_EQUAL"},
         {TokenType::PLUS_EQUAL, "PLUS_EQUAL"},
         {TokenType::MINUS_EQUAL, "MINUS_EQUAL"},
+        {TokenType::PIPE, "PIPE"},
+        {TokenType::DOUBLE_DOT, "DOUBLE_DOT"},
+        {TokenType::TRIPLE_DOT, "TRIPLE_DOT"},
         
         // Delimiters
         {TokenType::LPAREN, "LPAREN"},
@@ -71,7 +85,9 @@ std::string tokenTypeToString(TokenType type) {
         {TokenType::COMMA, "COMMA"},
         {TokenType::DOT, "DOT"},
         {TokenType::ARROW, "ARROW"},
+        {TokenType::CHANNEL_SEND, "CHANNEL_SEND"},
         {TokenType::QUESTION, "QUESTION"},
+        {TokenType::AT, "AT"},
         
         // Special
         {TokenType::NEWLINE, "NEWLINE"},

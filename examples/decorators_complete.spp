@@ -1,0 +1,227 @@
+# Complete Decorators Showcase - All Features
+
+print("=== Sapphire Decorators - Complete Feature Set ===\n")
+
+# ============================================================================
+# PART 1: User-Defined Decorators
+# ============================================================================
+
+print("PART 1: User-Defined Decorators\n")
+
+fn trace(func):
+    fn wrapper():
+        print("[TRACE] Entering function")
+        func()
+        print("[TRACE] Exiting function")
+    return wrapper
+
+@trace
+fn hello():
+    print("Hello from decorated function!")
+
+hello()
+
+# ============================================================================
+# PART 2: Built-in Function Decorators
+# ============================================================================
+
+print("\n\nPART 2: Built-in Function Decorators\n")
+
+# @cache - Memoization
+print("2a. @cache decorator:")
+@cache
+fn fib(n: int) -> int:
+    print("  Computing fib(", n, ")")
+    if n <= 1:
+        return n
+    return fib(n - 1) + fib(n - 2)
+
+print("First call fib(5):", fib(5))
+print("Second call fib(5):", fib(5), "(cached)")
+
+# @timing - Performance measurement
+print("\n2b. @timing decorator:")
+@timing
+fn compute():
+    let sum = 0
+    for i in range(500):
+        sum = sum + i
+    return sum
+
+let result = compute()
+print("Result:", result)
+
+# @deprecated - Deprecation warnings
+print("\n2c. @deprecated decorator:")
+@deprecated("Use new_api() instead - will be removed in v2.0")
+fn old_api():
+    return "legacy data"
+
+let data = old_api()
+
+# Multiple built-in decorators
+print("\n2d. Multiple built-in decorators:")
+@timing
+@cache
+fn expensive(n: int) -> int:
+    print("  Expensive computation for", n)
+    return n * n * n
+
+print("First call:", expensive(10))
+print("Second call:", expensive(10), "(cached, no timing)")
+
+# ============================================================================
+# PART 3: Class Decorators
+# ============================================================================
+
+print("\n\nPART 3: Class Decorators\n")
+
+# @dataclass - Auto-generated __str__
+print("3a. @dataclass decorator:")
+@dataclass
+class Point:
+    fn __init__(self, x: int, y: int):
+        self.x = x
+        self.y = y
+    
+    fn distance_from_origin(self) -> float:
+        let dx = self.x * self.x
+        let dy = self.y * self.y
+        return dx + dy  # Simplified, no sqrt
+
+let p1 = Point(3, 4)
+let p2 = Point(10, 20)
+print("p1:", p1)
+print("p2:", p2)
+print("p1.distance_from_origin():", p1.distance_from_origin())
+
+# ============================================================================
+# PART 4: Method Decorators
+# ============================================================================
+
+print("\n\nPART 4: Method Decorators\n")
+
+# @staticmethod
+print("4a. @staticmethod decorator:")
+class MathHelper:
+    @staticmethod
+    fn add(a: int, b: int) -> int:
+        return a + b
+    
+    @staticmethod
+    fn multiply(a: int, b: int) -> int:
+        return a * b
+
+print("MathHelper.add(5, 7):", MathHelper.add(5, 7))
+print("MathHelper.multiply(3, 9):", MathHelper.multiply(3, 9))
+
+# @classmethod
+print("\n4b. @classmethod decorator:")
+class Factory:
+    fn __init__(self, name: str):
+        self.name = name
+    
+    @classmethod
+    fn create_default(cls):
+        return Factory("DefaultFactory")
+    
+    @classmethod
+    fn create_custom(cls, name: str):
+        return Factory(name)
+
+let f1 = Factory.create_default()
+let f2 = Factory.create_custom("CustomFactory")
+print("f1.name:", f1.name)
+print("f2.name:", f2.name)
+
+# @property
+print("\n4c. @property decorator:")
+class Circle:
+    fn __init__(self, radius: float):
+        self.radius = radius
+    
+    @property
+    fn area(self) -> float:
+        return 3.14159 * self.radius * self.radius
+    
+    @property
+    fn circumference(self) -> float:
+        return 2.0 * 3.14159 * self.radius
+
+let circle = Circle(10.0)
+print("Circle area:", circle.area())
+print("Circle circumference:", circle.circumference())
+
+# ============================================================================
+# PART 5: Advanced Combinations
+# ============================================================================
+
+print("\n\nPART 5: Advanced Combinations\n")
+
+# Dataclass with static methods
+@dataclass
+class Vector:
+    fn __init__(self, x: int, y: int):
+        self.x = x
+        self.y = y
+    
+    @staticmethod
+    fn zero():
+        return Vector(0, 0)
+    
+    @staticmethod
+    fn unit_x():
+        return Vector(1, 0)
+    
+    fn magnitude_squared(self) -> int:
+        return self.x * self.x + self.y * self.y
+
+let v1 = Vector.zero()
+let v2 = Vector.unit_x()
+let v3 = Vector(3, 4)
+
+print("v1 (zero):", v1)
+print("v2 (unit_x):", v2)
+print("v3:", v3)
+print("v3.magnitude_squared():", v3.magnitude_squared())
+
+# User-defined decorator with built-in decorators
+print("\n\nCombining user-defined and built-in decorators:")
+
+fn validate_positive(func):
+    fn wrapper(n: int):
+        if n < 0:
+            print("  [VALIDATION] Error: negative input")
+            return 0
+        return func(n)
+    return wrapper
+
+@validate_positive
+@cache
+@timing
+fn factorial(n: int) -> int:
+    print("  Computing factorial(", n, ")")
+    if n <= 1:
+        return 1
+    return n * factorial(n - 1)
+
+print("factorial(5):", factorial(5))
+print("factorial(-3):", factorial(-3))
+print("factorial(5) again:", factorial(5), "(cached)")
+
+# ============================================================================
+# Summary
+# ============================================================================
+
+print("\n\n=== Decorator Features Complete ===")
+print("✓ User-defined decorators")
+print("✓ @cache (memoization)")
+print("✓ @timing (performance)")
+print("✓ @deprecated (warnings)")
+print("✓ @dataclass (auto __str__)")
+print("✓ @staticmethod (no self)")
+print("✓ @classmethod (cls parameter)")
+print("✓ @property (getter methods)")
+print("✓ Multiple decorator stacking")
+print("✓ Mixing all decorator types")
+print("\n🎉 Milestone 4: 100% Complete!")

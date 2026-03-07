@@ -22,6 +22,7 @@ class UnaryExpr;
 class LiteralExpr;
 class VariableExpr;
 class CallExpr;
+class MatchExpr;
 class VarDeclStmt;
 class IfStmt;
 class WhileStmt;
@@ -60,6 +61,7 @@ private:
     llvm::Value* generateLiteralExpr(LiteralExpr* expr);
     llvm::Value* generateVariableExpr(VariableExpr* expr);
     llvm::Value* generateCallExpr(CallExpr* expr);
+    llvm::Value* generateMatchExpr(MatchExpr* expr);
     
     // Statement generation
     void generateStmt(Stmt* stmt);

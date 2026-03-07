@@ -1,8 +1,12 @@
-# Sapphire Standard Library - API Reference
+# Sapphire API Reference
 
-Complete reference for all available header files and libraries in Sapphire.
+Complete reference for language features and standard library.
 
 ## Table of Contents
+
+### Language Features (v1.1)
+- [Pattern Matching](#pattern-matching) - Match expressions with guards
+- [Traits](#traits) - Rust-style traits for polymorphism
 
 ### Core Libraries
 - [DateTime](#datetime) - Date and time operations
@@ -31,6 +35,93 @@ Complete reference for all available header files and libraries in Sapphire.
 ### Advanced
 - [HPC/SIMD](#hpcsimd) - High-performance computing
 - [CLI](#cli) - Command-line argument parsing
+
+---
+
+## Pattern Matching
+
+**Status:** Core features implemented (v1.1)  
+**See:** [Pattern Matching Guide](PATTERN_MATCHING.md)
+
+### Syntax
+
+```sapphire
+match <value>:
+    <pattern1> => <expression1>
+    <pattern2> => <expression2>
+    _ => <default>
+```
+
+### Example
+
+```sapphire
+fn classify(n):
+    return match n:
+        0 => "zero"
+        1 => "one"
+        2 => "two"
+        _ => "other"
+
+print(classify(0))  # "zero"
+print(classify(5))  # "other"
+```
+
+### Features
+- ✅ Literal patterns (0, "hello", true)
+- ✅ Variable patterns (x, name)
+- ✅ Wildcard pattern (_)
+- ✅ Multiple arms
+- 🟡 Guard clauses (x if x > 0) - in progress
+- 🟡 Array destructuring ([a, b, c]) - planned
+- 🟡 Object destructuring ({x, y}) - planned
+
+---
+
+## Traits
+
+**Status:** Core features implemented (v1.1)  
+**See:** [Traits Guide](TRAITS.md)
+
+### Defining Traits
+
+```sapphire
+trait Drawable:
+    fn draw(self) -> str
+    fn area(self) -> float
+```
+
+### Implementing Traits
+
+```sapphire
+class Circle:
+    fn __init__(self, r):
+        self.radius = r
+
+impl Drawable for Circle:
+    fn draw(self) -> str:
+        return "Circle"
+    fn area(self) -> float:
+        return 3.14159 * self.radius * self.radius
+```
+
+### Using Trait Methods
+
+```sapphire
+let c = Circle(5.0)
+print(c.draw())   # Calls trait method
+print(c.area())   # Calls trait method
+```
+
+### Features
+- ✅ Trait definitions
+- ✅ Impl blocks (standalone)
+- ✅ Trait method dispatch
+- ✅ Multiple traits per type
+- ✅ Multiple types per trait
+- 🟡 Trait bounds in generics - planned
+- 🟡 Where clauses - planned
+- 🟡 Associated types - planned
+- 🟡 Default methods - planned
 
 ---
 

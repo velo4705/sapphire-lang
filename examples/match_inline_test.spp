@@ -1,0 +1,11 @@
+# Test match expression inline
+
+fn main():
+    print("Before match")
+    
+    let result = match 0:
+        0 => "zero"
+        _ => "other"
+    
+    print("After match")
+    print(result)

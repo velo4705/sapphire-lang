@@ -1,0 +1,153 @@
+# Test ? Operator for Error Propagation
+# Milestone 5 Phase 3
+
+print("Testing ? operator for automatic error propagation\n")
+
+# Test 1: Basic error propagation
+fn divide(a, b):
+    if b == 0:
+        return Err("division by zero")
+    return Ok(a / b)
+
+fn calculate(x, y, z):
+    let step1 = divide(x, y)?
+    let step2 = divide(step1, z)?
+    return Ok(step2)
+
+print("Test 1: Basic error propagation")
+let result1 = calculate(20, 2, 5)
+match result1:
+    Ok(v) => print("  Success:", v)
+    Err(e) => print("  Error:", e)
+
+let result2 = calculate(20, 0, 5)
+match result2:
+    Ok(v) => print("  Success:", v)
+    Err(e) => print("  Error:", e)
+
+let result3 = calculate(20, 2, 0)
+match result3:
+    Ok(v) => print("  Success:", v)
+    Err(e) => print("  Error:", e)
+
+# Test 2: Chaining multiple operations
+fn parse_int(s):
+    if s == "42":
+        return Ok(42)
+    return Err("invalid number")
+
+fn double_value(n):
+    return Ok(n * 2)
+
+fn process(input):
+    let num = parse_int(input)?
+    let doubled = double_value(num)?
+    return Ok(doubled)
+
+print("\nTest 2: Chaining operations")
+let result4 = process("42")
+match result4:
+    Ok(v) => print("  Success:", v)
+    Err(e) => print("  Error:", e)
+
+let result5 = process("invalid")
+match result5:
+    Ok(v) => print("  Success:", v)
+    Err(e) => print("  Error:", e)
+
+# Test 3: Early return on error
+fn step1():
+    return Ok(10)
+
+fn step2(x):
+    return Err("step2 failed")
+
+fn step3(x):
+    return Ok(x * 3)
+
+fn pipeline():
+    let a = step1()?
+    let b = step2(a)?  # This will cause early return
+    let c = step3(b)?  # This never executes
+    return Ok(c)
+
+print("\nTest 3: Early return on error")
+let result6 = pipeline()
+match result6:
+    Ok(v) => print("  Success:", v)
+    Err(e) => print("  Error:", e, "(step3 never executed)")
+
+# Test 4: Nested function calls with ?
+fn validate_positive(n):
+    if n > 0:
+        return Ok(n)
+    return Err("not positive")
+
+fn validate_even(n):
+    if n % 2 == 0:
+        return Ok(n)
+    return Err("not even")
+
+fn validate_number(n):
+    let pos = validate_positive(n)?
+    let even = validate_even(pos)?
+    return Ok(even)
+
+print("\nTest 4: Validation chain")
+let result7 = validate_number(10)
+match result7:
+    Ok(v) => print("  Success:", v)
+    Err(e) => print("  Error:", e)
+
+let result8 = validate_number(-5)
+match result8:
+    Ok(v) => print("  Success:", v)
+    Err(e) => print("  Error:", e)
+
+let result9 = validate_number(7)
+match result9:
+    Ok(v) => print("  Success:", v)
+    Err(e) => print("  Error:", e)
+
+# Test 5: Using ? with Result methods
+fn get_value():
+    return Ok(42)
+
+fn transform():
+    let val = get_value()?
+    return Ok(val * 2)
+
+print("\nTest 5: Using ? with Result methods")
+let result10 = transform()
+match result10:
+    Ok(v) => print("  Success:", v)
+    Err(e) => print("  Error:", e)
+
+# Test 6: Error propagation with different error types
+fn read_file(filename):
+    if filename == "data.txt":
+        return Ok("file contents")
+    return Err("file not found")
+
+fn parse_data(contents):
+    if contents == "file contents":
+        return Ok("parsed data")
+    return Err("parse error")
+
+fn load_and_parse(filename):
+    let contents = read_file(filename)?
+    let data = parse_data(contents)?
+    return Ok(data)
+
+print("\nTest 6: File operations simulation")
+let result11 = load_and_parse("data.txt")
+match result11:
+    Ok(v) => print("  Success:", v)
+    Err(e) => print("  Error:", e)
+
+let result12 = load_and_parse("missing.txt")
+match result12:
+    Ok(v) => print("  Success:", v)
+    Err(e) => print("  Error:", e)
+
+print("\n✓ All ? operator tests passed!")

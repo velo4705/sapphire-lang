@@ -1,0 +1,136 @@
+# Practical Option Type Examples
+
+print("=== Practical Option Type Usage ===\n")
+
+# Example 1: Safe lookup
+print("1. Safe Lookup:")
+fn find_user(id):
+    if id == 1:
+        return Some("Alice")
+    if id == 2:
+        return Some("Bob")
+    return None()
+
+let user1 = find_user(1)
+match user1:
+    Some(name) => print("  Found user:", name)
+    None => print("  User not found")
+
+let user99 = find_user(99)
+match user99:
+    Some(name) => print("  Found user:", name)
+    None => print("  User not found")
+
+# Example 2: Configuration with defaults
+print("\n2. Configuration with Defaults:")
+fn get_config(key):
+    if key == "port":
+        return Some(8080)
+    if key == "host":
+        return Some("localhost")
+    return None()
+
+let port = get_config("port").unwrap_or(3000)
+let host = get_config("host").unwrap_or("0.0.0.0")
+let timeout = get_config("timeout").unwrap_or(30)
+
+print("  Server config:")
+print("    host:", host)
+print("    port:", port)
+print("    timeout:", timeout)
+
+# Example 3: Chained operations
+print("\n3. Chained Operations:")
+fn parse_int(s):
+    if s == "42":
+        return Some(42)
+    if s == "100":
+        return Some(100)
+    return None()
+
+fn validate_positive(n):
+    if n > 0:
+        return Some(n)
+    return None()
+
+fn double_value(n):
+    return Some(n * 2)
+
+let input1 = "42"
+let result1 = parse_int(input1).and_then(validate_positive).and_then(double_value)
+print("  parse('42') -> validate -> double:", result1)
+
+let input2 = "invalid"
+let result2 = parse_int(input2).and_then(validate_positive).and_then(double_value)
+print("  parse('invalid') -> validate -> double:", result2)
+
+# Example 4: Optional function parameters
+print("\n4. Optional Function Parameters:")
+fn greet(name, title):
+    match title:
+        Some(t) => print("  Hello, " + t + " " + name)
+        None => print("  Hello, " + name)
+
+greet("Alice", Some("Dr."))
+greet("Bob", None())
+
+# Example 5: Safe array access
+print("\n5. Safe Array Access:")
+fn safe_get(arr, index):
+    if index >= 0:
+        if index < len(arr):
+            return Some(arr[index])
+    return None()
+
+let numbers = [10, 20, 30, 40, 50]
+let item1 = safe_get(numbers, 2)
+let item2 = safe_get(numbers, 10)
+
+print("  numbers[2]:", item1)
+print("  numbers[10]:", item2)
+print("  numbers[2] with default:", item1.unwrap_or(-1))
+print("  numbers[10] with default:", item2.unwrap_or(-1))
+
+# Example 6: Transforming Option values
+print("\n6. Transforming Option Values:")
+fn add_ten(x):
+    return x + 10
+
+let opt1 = Some(5)
+let opt2 = None()
+
+print("  Some(5).map(add_ten):", opt1.map(add_ten))
+print("  None().map(add_ten):", opt2.map(add_ten))
+
+# Example 7: Multiple pattern matching
+print("\n7. Multiple Pattern Matching:")
+fn describe_option(opt):
+    match opt:
+        Some(0) => print("  Got Some with zero")
+        Some(x) => print("  Got Some with non-zero:", x)
+        None => print("  Got None")
+
+describe_option(Some(0))
+describe_option(Some(42))
+describe_option(None())
+
+# Example 8: Nested Options
+print("\n8. Nested Options:")
+let nested = Some(Some(100))
+print("  nested:", nested)
+match nested:
+    Some(inner) => print("  Outer Some contains:", inner)
+    None => print("  Outer is None")
+
+# Example 9: Option in loops
+print("\n9. Option in Loops:")
+let ids = [1, 99, 2, 88]
+let i = 0
+while i < len(ids):
+    let user = find_user(ids[i])
+    match user:
+        Some(name) => print("  ID", ids[i], "->", name)
+        None => print("  ID", ids[i], "-> not found")
+    i = i + 1
+
+print("\n=== Practical examples complete! ===")

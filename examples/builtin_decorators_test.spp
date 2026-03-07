@@ -1,0 +1,67 @@
+# Built-in Decorators Test
+
+print("=== Built-in Decorators Test ===\n")
+
+# Test 1: @cache decorator
+print("Test 1: @cache decorator (memoization)")
+
+@cache
+fn fibonacci(n: int) -> int:
+    print("  Computing fibonacci(", n, ")")
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+print("First call to fibonacci(5):")
+let result1 = fibonacci(5)
+print("Result:", result1)
+
+print("\nSecond call to fibonacci(5) (should use cache):")
+let result2 = fibonacci(5)
+print("Result:", result2)
+
+# Test 2: @timing decorator
+print("\n\nTest 2: @timing decorator")
+
+@timing
+fn slow_function():
+    print("  Doing some work...")
+    let sum = 0
+    for i in range(1000):
+        sum = sum + i
+    return sum
+
+let result = slow_function()
+print("Result:", result)
+
+# Test 3: @deprecated decorator
+print("\n\nTest 3: @deprecated decorator")
+
+@deprecated("Use new_function() instead")
+fn old_function():
+    print("  This is the old function")
+    return 42
+
+print("Calling deprecated function:")
+let val = old_function()
+print("Result:", val)
+
+# Test 4: Multiple built-in decorators
+print("\n\nTest 4: Multiple decorators (@cache + @timing)")
+
+@timing
+@cache
+fn expensive_computation(n: int) -> int:
+    print("  Computing expensive_computation(", n, ")")
+    let result = n * n
+    return result
+
+print("First call:")
+let r1 = expensive_computation(10)
+print("Result:", r1)
+
+print("\nSecond call (cached, should be faster):")
+let r2 = expensive_computation(10)
+print("Result:", r2)
+
+print("\n✓ Built-in decorators test complete!")

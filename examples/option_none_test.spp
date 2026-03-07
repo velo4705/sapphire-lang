@@ -1,0 +1,3 @@
+# Test None
+let x = None
+print("x is:", x)

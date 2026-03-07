@@ -1,0 +1,34 @@
+# Traits with Generics
+
+trait Drawable:
+    fn draw(self) -> str
+
+class Circle:
+    fn __init__(self, r):
+        self.radius = r
+
+class Square:
+    fn __init__(self, s):
+        self.side = s
+
+impl Drawable for Circle:
+    fn draw(self) -> str:
+        return "Circle"
+
+impl Drawable for Square:
+    fn draw(self) -> str:
+        return "Square"
+
+# Generic function that works with any Drawable
+fn print_drawable(item):
+    print("Drawing:", item.draw())
+
+print("=== Testing Generic Functions ===")
+
+let c = Circle(5.0)
+let s = Square(4.0)
+
+print_drawable(c)
+print_drawable(s)
+
+print("\n✓ Generic functions with traits work!")

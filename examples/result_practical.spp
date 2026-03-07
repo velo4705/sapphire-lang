@@ -1,0 +1,183 @@
+# Practical Result Type Examples
+
+print("=== Practical Result Type Usage ===\n")
+
+# Example 1: File operations
+print("1. File Operations:")
+fn read_file_safe(filename):
+    if filename == "data.txt":
+        return Ok("file contents here")
+    if filename == "config.json":
+        return Ok("port=8080")
+    return Err("file not found: " + filename)
+
+let file1 = read_file_safe("data.txt")
+let file2 = read_file_safe("missing.txt")
+
+match file1:
+    Ok(content) => print("  Read file:", content)
+    Err(error) => print("  Error:", error)
+
+match file2:
+    Ok(content) => print("  Read file:", content)
+    Err(error) => print("  Error:", error)
+
+# Example 2: Input validation
+print("\n2. Input Validation:")
+fn validate_email(email):
+    if len(email) < 5:
+        return Err("email too short")
+    if email == "test@example.com":
+        return Ok(email)
+    if email == "user@domain.com":
+        return Ok(email)
+    return Err("invalid email format")
+
+let emails = ["test@example.com", "bad", "user@domain.com"]
+let i = 0
+while i < len(emails):
+    let result = validate_email(emails[i])
+    match result:
+        Ok(e) => print("  Valid email:", e)
+        Err(msg) => print("  Invalid:", emails[i], "-", msg)
+    i = i + 1
+
+# Example 3: Safe arithmetic
+print("\n3. Safe Arithmetic:")
+fn safe_divide(a, b):
+    if b == 0:
+        return Err("division by zero")
+    return Ok(a / b)
+
+fn safe_sqrt(x):
+    if x < 0:
+        return Err("negative number")
+    return Ok(x)
+
+let calc1 = safe_divide(100, 5)
+let calc2 = safe_divide(100, 0)
+let calc3 = safe_sqrt(-4)
+
+print("  100 / 5:", calc1)
+print("  100 / 0:", calc2)
+print("  sqrt(-4):", calc3)
+
+# Example 4: Chained validation
+print("\n4. Chained Validation:")
+fn parse_age(s):
+    if s == "25":
+        return Ok(25)
+    if s == "30":
+        return Ok(30)
+    if s == "-5":
+        return Ok(-5)
+    return Err("not a number")
+
+fn validate_age_range(age):
+    if age < 0:
+        return Err("age cannot be negative")
+    if age > 150:
+        return Err("age too high")
+    return Ok(age)
+
+fn format_age(age):
+    return Ok("Age: " + age)
+
+let input1 = "25"
+let input2 = "-5"
+let input3 = "invalid"
+
+let result1 = parse_age(input1).and_then(validate_age_range)
+let result2 = parse_age(input2).and_then(validate_age_range)
+let result3 = parse_age(input3).and_then(validate_age_range)
+
+print("  Input '25':", result1)
+print("  Input '-5':", result2)
+print("  Input 'invalid':", result3)
+
+# Example 5: Database operations
+print("\n5. Database Operations:")
+fn find_user_by_id(id):
+    if id == 1:
+        return Ok("Alice")
+    if id == 2:
+        return Ok("Bob")
+    return Err("user not found")
+
+fn get_user_permissions(username):
+    if username == "Alice":
+        return Ok("admin")
+    if username == "Bob":
+        return Ok("user")
+    return Err("no permissions")
+
+let user_perm1 = find_user_by_id(1).and_then(get_user_permissions)
+let user_perm2 = find_user_by_id(99).and_then(get_user_permissions)
+
+print("  User 1 permissions:", user_perm1)
+print("  User 99 permissions:", user_perm2)
+
+# Example 6: Configuration parsing
+print("\n6. Configuration Parsing:")
+fn read_config(key):
+    if key == "port":
+        return Ok("8080")
+    if key == "host":
+        return Ok("localhost")
+    return Err("config key not found")
+
+fn parse_port(s):
+    if s == "8080":
+        return Ok(8080)
+    if s == "3000":
+        return Ok(3000)
+    return Err("invalid port number")
+
+let port_result = read_config("port").and_then(parse_port)
+let host_result = read_config("host")
+let timeout_result = read_config("timeout")
+
+print("  Port config:", port_result)
+print("  Host config:", host_result)
+print("  Timeout config:", timeout_result)
+
+# Example 7: Error recovery with unwrap_or
+print("\n7. Error Recovery:")
+let port = read_config("port").and_then(parse_port).unwrap_or(3000)
+let host = read_config("host").unwrap_or("0.0.0.0")
+let timeout = read_config("timeout").unwrap_or("30")
+
+print("  Server will run on", host, ":", port)
+print("  Timeout:", timeout)
+
+# Example 8: Transforming errors
+print("\n8. Transforming Errors:")
+fn add_context(error):
+    return "Configuration error: " + error
+
+let bad_config = read_config("missing").map_err(add_context)
+print("  Error with context:", bad_config)
+
+# Example 9: Multiple error types
+print("\n9. Multiple Error Types:")
+fn process_data(data):
+    if data == "":
+        return Err("empty data")
+    if data == "invalid":
+        return Err("invalid format")
+    if data == "corrupt":
+        return Err("corrupted data")
+    return Ok("processed: " + data)
+
+let data_items = ["valid", "", "invalid", "corrupt"]
+let j = 0
+while j < len(data_items):
+    let result = process_data(data_items[j])
+    match result:
+        Ok(processed) => print("  Success:", processed)
+        Err("empty data") => print("  Skipping empty data")
+        Err("invalid format") => print("  Format error, using default")
+        Err(e) => print("  Fatal error:", e)
+    j = j + 1
+
+print("\n=== Practical examples complete! ===")

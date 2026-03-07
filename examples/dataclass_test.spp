@@ -1,0 +1,53 @@
+# Dataclass Test
+
+print("=== Dataclass Test ===\n")
+
+# Test 1: Simple dataclass
+print("Test 1: Simple dataclass")
+
+@dataclass
+class Point:
+    fn __init__(self, x: int, y: int):
+        self.x = x
+        self.y = y
+
+let p1 = Point(10, 20)
+let p2 = Point(10, 20)
+let p3 = Point(5, 15)
+
+print("p1:", p1)
+print("p2:", p2)
+print("p3:", p3)
+
+# Test 2: Dataclass with methods
+print("\n\nTest 2: Dataclass with custom methods")
+
+@dataclass
+class Rectangle:
+    fn __init__(self, width: int, height: int):
+        self.width = width
+        self.height = height
+    
+    fn area(self) -> int:
+        return self.width * self.height
+
+let rect = Rectangle(5, 10)
+print("rect:", rect)
+print("rect.area():", rect.area())
+
+# Test 3: Nested dataclass
+print("\n\nTest 3: Nested dataclass")
+
+@dataclass
+class Person:
+    fn __init__(self, name: str, age: int):
+        self.name = name
+        self.age = age
+
+let alice = Person("Alice", 30)
+let bob = Person("Bob", 25)
+
+print("alice:", alice)
+print("bob:", bob)
+
+print("\n✓ Dataclass test complete!")

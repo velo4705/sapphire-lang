@@ -1,0 +1,76 @@
+# WaitGroup Test
+
+fn worker(id: int, wg):
+    print("Worker", id, "starting")
+    # Simulate work
+    for i in range(3):
+        print("  Worker", id, "step", i)
+    print("Worker", id, "done")
+    wg.done()
+
+fn main():
+    print("=== WaitGroup Test ===\n")
+    
+    # Test 1: Basic WaitGroup
+    print("Test 1: Basic WaitGroup")
+    let wg = WaitGroup()
+    print("Created WaitGroup:", wg)
+    print("Initial count:", wg.count())
+    
+    # Add 3 workers
+    wg.add(3)
+    print("After add(3), count:", wg.count())
+    
+    # Spawn workers
+    go worker(1, wg)
+    go worker(2, wg)
+    go worker(3, wg)
+    
+    print("All workers spawned")
+    print("Final count:", wg.count())
+    wg.wait()
+    print("All workers completed!")
+    
+    # Test 2: WaitGroup with channels
+    print("\nTest 2: WaitGroup with channels")
+    let wg2 = WaitGroup()
+    let results = chan<int>(10)
+    
+    fn producer(id: int, ch, wg):
+        print("Producer", id, "starting")
+        for i in range(3):
+            ch <- id * 10 + i
+        print("Producer", id, "done")
+        wg.done()
+    
+    wg2.add(2)
+    go producer(1, results, wg2)
+    go producer(2, results, wg2)
+    
+    wg2.wait()
+    print("All producers done")
+    
+    # Collect results
+    print("Collecting results:")
+    for i in range(6):
+        let val = <-results
+        print("  Result:", val)
+    
+    # Test 3: Nested WaitGroups
+    print("\nTest 3: Multiple operations")
+    let wg3 = WaitGroup()
+    
+    fn task(id: int, wg):
+        print("Task", id, "executing")
+        wg.done()
+    
+    wg3.add(5)
+    for i in range(5):
+        go task(i, wg3)
+    
+    wg3.wait()
+    print("All tasks completed!")
+    
+    print("\n✓ WaitGroup test complete!")
+
+main()

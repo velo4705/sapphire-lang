@@ -1,0 +1,11 @@
+# Hot Reload Test File
+# Modify this file while watching to see hot reload in action
+
+fn greet(name):
+    print("Hello,", name, "!")
+
+fn calculate(x, y):
+    return x + y
+
+let version = 1
+print("Hot reload test - Version", version)

@@ -1,0 +1,14 @@
+# Simple Pattern Matching Test (no guards)
+
+fn classify_number(n):
+    return match n:
+        0 => "zero"
+        1 => "one"
+        2 => "two"
+        _ => "other"
+
+print("Testing basic patterns:")
+print(classify_number(0))
+print(classify_number(1))
+print(classify_number(2))
+print(classify_number(5))

@@ -1,0 +1,9 @@
+# Test exact line from comprehensive
+
+fn safe_divide(x):
+    if x == 0:
+        return Err("division by zero")
+    return Ok(100 / x)
+
+let result1 = Ok(10).and_then(safe_divide)
+print("result1:", result1)

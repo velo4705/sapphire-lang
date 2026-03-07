@@ -1,0 +1,13 @@
+# Minimal match test
+
+fn test_match(n: int) -> str:
+    return match n:
+        0 => "zero"
+        _ => "other"
+
+fn main():
+    let result = test_match(0)
+    print(result)
+    
+    let result2 = test_match(5)
+    print(result2)

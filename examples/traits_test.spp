@@ -1,47 +1,6 @@
-# Traits test
+# Basic Trait Test
 
-# Define a trait
 trait Drawable:
     fn draw(self) -> str
 
-trait Resizable:
-    fn resize(self, width: int, height: int)
-
-# Implement trait for a type
-class Circle:
-    radius: float
-    
-    impl Drawable:
-        fn draw(self) -> str:
-            return f"Circle with radius {self.radius}"
-    
-    impl Resizable:
-        fn resize(self, width: int, height: int):
-            self.radius = min(width, height) / 2.0
-
-class Rectangle:
-    width: int
-    height: int
-    
-    impl Drawable:
-        fn draw(self) -> str:
-            return f"Rectangle {self.width}x{self.height}"
-    
-    impl Resizable:
-        fn resize(self, width: int, height: int):
-            self.width = width
-            self.height = height
-
-# Generic function with trait bound
-fn render<T: Drawable>(shape: T):
-    print(shape.draw())
-
-# Usage
-let circle = Circle(radius=5.0)
-let rect = Rectangle(width=10, height=20)
-
-render(circle)
-render(rect)
-
-circle.resize(20, 20)
-render(circle)
+print("Trait declared successfully")

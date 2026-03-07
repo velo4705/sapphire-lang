@@ -1,0 +1,19 @@
+# Reload Demo
+# This file demonstrates the reload functionality
+
+print("=== Reload Demo ===")
+print("Version: 1.0")
+
+fn add(a, b):
+    return a + b
+
+fn multiply(a, b):
+    return a * b
+
+let x = 10
+let y = 20
+
+print("add(x, y) =", add(x, y))
+print("multiply(x, y) =", multiply(x, y))
+
+print("✓ Demo loaded successfully")

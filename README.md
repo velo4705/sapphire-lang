@@ -59,7 +59,7 @@ sapp hello.spp
 
 **Complete Tooling** - Package manager, formatter, test runner, and debugger included.
 
-**Rich Standard Library** - 18 libraries covering everything from file I/O to HTTP servers.
+**Rich Standard Library** - 50+ functions across 18 modules covering everything from file I/O to functional programming.
 
 ---
 
@@ -67,13 +67,17 @@ sapp hello.spp
 
 ### Language
 - Type inference (no verbose type annotations)
-- Pattern matching
+- Pattern matching with guards
 - Generics and traits
+- Decorators (@cache, @timing, @deprecated, @dataclass)
+- Option<T> and Result<T, E> types for safe error handling
+- ? operator for error propagation
 - Error handling (try/catch)
 - String interpolation
 - Closures and lambdas
+- Async/await and channels
 
-### Standard Library (18 modules)
+### Standard Library (18 modules, 50+ functions)
 - **Core**: String, Vec, HashMap, Math
 - **I/O**: File operations, JSON, Base64
 - **Network**: HTTP client/server
@@ -81,6 +85,8 @@ sapp hello.spp
 - **System**: Process management, OS interface
 - **Advanced**: SIMD/HPC, GUI, Graphics
 - **Tools**: CLI parsing, DateTime
+- **Functional**: map, filter, reduce, zip, enumerate
+- **Testing**: assert functions for unit tests
 
 ### Performance
 - LLVM-based compilation
@@ -167,6 +173,38 @@ fn main() {
 }
 ```
 
+### Decorators
+
+```sapphire
+# Built-in @cache decorator for memoization
+@cache
+fn fibonacci(n: int) -> int {
+    if n <= 1 { return n }
+    return fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+# Built-in @timing decorator for performance measurement
+@timing
+fn slow_function() {
+    # ... expensive computation ...
+}
+
+# User-defined decorators
+fn log_decorator(func) {
+    fn wrapper() {
+        println("Before function")
+        func()
+        println("After function")
+    }
+    return wrapper
+}
+
+@log_decorator
+fn greet() {
+    println("Hello!")
+}
+```
+
 More examples in [examples/](examples/)
 
 ---
@@ -211,12 +249,54 @@ sapphire-fmt file.spp       # Format file
 sapphire-fmt --check .      # Check formatting
 ```
 
+**sapphire-lsp** - Language Server Protocol
+```bash
+# Used by IDEs for auto-completion, go-to-definition, etc.
+# VSCode extension available in editors/vscode/
+```
+
+**sapphire-debug** - Debug Adapter Protocol
+```bash
+# Used by IDEs for breakpoint debugging
+# Integrated with VSCode extension
+```
+
+**sapphire-doc** - Documentation generator
+```bash
+sapphire-doc file.spp       # Generate docs for one file
+sapphire-doc examples/      # Generate docs for directory
+```
+
+**spm-registry** - Package registry client
+```bash
+spm-registry publish        # Publish package to registry
+spm-registry install pkg    # Install package from registry
+spm-registry search query   # Search for packages
+```
+
+---
+
+## IDE Support
+
+**VSCode Extension** - Full language support
+- Syntax highlighting
+- Auto-completion
+- Go to definition
+- Find references
+- Real-time error checking
+- Breakpoint debugging
+
+Install:
+```bash
+ln -s $(pwd)/editors/vscode ~/.vscode/extensions/sapphire-lang-1.0.0
+```
+
 ---
 
 ## Status
 
-**Version:** 1.0.0  
-**Tests:** 56/56 passing (100%)  
+**Version:** 1.5.0  
+**Tests:** 34/34 passing (100%)  
 **Libraries:** 18/18 complete  
 **Status:** Production ready ✅
 

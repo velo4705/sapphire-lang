@@ -1,0 +1,20 @@
+# Object Destructuring Pattern Test
+
+class Point:
+    fn __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+fn describe_point(p):
+    return match p:
+        {x: 0, y: 0} => "origin"
+        {x: 0} => "on y-axis"
+        {y: 0} => "on x-axis"
+        {x, y} => "point"
+        _ => "other"
+
+print("Testing object patterns:")
+print(describe_point(Point(0, 0)))
+print(describe_point(Point(0, 5)))
+print(describe_point(Point(5, 0)))
+print(describe_point(Point(3, 4)))

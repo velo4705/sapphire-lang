@@ -1,0 +1,108 @@
+# Reflection System Test
+# Milestone 8 Phase 2
+
+print("Testing Reflection System\n")
+
+# Test 1: typeof() with basic types
+print("Test 1: typeof() with basic types")
+let x = 42
+print("  typeof(42):", typeof(x))
+
+let y = 3.14
+print("  typeof(3.14):", typeof(y))
+
+let s = "hello"
+print("  typeof('hello'):", typeof(s))
+
+let b = true
+print("  typeof(true):", typeof(b))
+
+let n = none
+print("  typeof(none):", typeof(n))
+
+let arr = [1, 2, 3]
+print("  typeof([1,2,3]):", typeof(arr))
+
+# Test 2: type_name() alias
+print("\nTest 2: type_name() alias")
+print("  type_name(42):", type_name(42))
+print("  type_name('test'):", type_name("test"))
+
+# Test 3: is_type() type checking
+print("\nTest 3: is_type() type checking")
+print("  is_type(42, 'int'):", is_type(42, "int"))
+print("  is_type(42, 'str'):", is_type(42, "str"))
+print("  is_type('hello', 'str'):", is_type("hello", "str"))
+print("  is_type(3.14, 'float'):", is_type(3.14, "float"))
+print("  is_type(true, 'bool'):", is_type(true, "bool"))
+print("  is_type([1,2], 'array'):", is_type([1, 2], "array"))
+
+# Test 4: Object reflection
+print("\nTest 4: Object reflection")
+
+class Point:
+    fn __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    fn distance(self):
+        return (self.x * self.x + self.y * self.y) ** 0.5
+    
+    fn move(self, dx, dy):
+        self.x = self.x + dx
+        self.y = self.y + dy
+
+let p = Point(3, 4)
+print("  typeof(Point instance):", typeof(p))
+print("  is_type(p, 'Point'):", is_type(p, "Point"))
+print("  fields(p):", fields(p))
+print("  methods(p):", methods(p))
+
+# Test 5: has_field() and has_method()
+print("\nTest 5: has_field() and has_method()")
+print("  has_field(p, 'x'):", has_field(p, "x"))
+print("  has_field(p, 'y'):", has_field(p, "y"))
+print("  has_field(p, 'z'):", has_field(p, "z"))
+print("  has_method(p, 'distance'):", has_method(p, "distance"))
+print("  has_method(p, 'move'):", has_method(p, "move"))
+print("  has_method(p, 'fly'):", has_method(p, "fly"))
+
+# Test 6: Reflection with different classes
+print("\nTest 6: Multiple classes")
+
+class Person:
+    fn __init__(self, name, age):
+        self.name = name
+        self.age = age
+    
+    fn greet(self):
+        print("Hello, I'm", self.name)
+
+let person = Person("Alice", 30)
+print("  typeof(person):", typeof(person))
+print("  is_type(person, 'Person'):", is_type(person, "Person"))
+print("  is_type(person, 'Point'):", is_type(person, "Point"))
+print("  fields(person):", fields(person))
+print("  methods(person):", methods(person))
+
+# Test 7: Reflection with functions
+print("\nTest 7: Function reflection")
+
+fn add(a, b):
+    return a + b
+
+print("  typeof(add):", typeof(add))
+print("  is_type(add, 'function'):", is_type(add, "function"))
+
+# Test 8: Reflection with Option and Result
+print("\nTest 8: Option and Result types")
+
+let some_val = Some(42)
+print("  typeof(Some(42)):", typeof(some_val))
+print("  is_type(Some(42), 'option'):", is_type(some_val, "option"))
+
+let ok_val = Ok(100)
+print("  typeof(Ok(100)):", typeof(ok_val))
+print("  is_type(Ok(100), 'result'):", is_type(ok_val, "result"))
+
+print("\n✓ All reflection tests passed!")

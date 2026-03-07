@@ -1,0 +1,49 @@
+# Channel Iteration Test
+
+fn main():
+    print("=== Channel Iteration Test ===\n")
+    
+    # Test 1: Basic iteration
+    print("Test 1: Basic iteration")
+    let ch = chan<int>(5)
+    
+    ch <- 1
+    ch <- 2
+    ch <- 3
+    ch <- 4
+    ch <- 5
+    ch.close()
+    
+    print("Iterating over channel:")
+    for value in ch:
+        print("  Value:", value)
+    
+    # Test 2: Iteration with strings
+    print("\nTest 2: String channel iteration")
+    let str_ch = chan<str>(3)
+    
+    str_ch <- "Hello"
+    str_ch <- "from"
+    str_ch <- "channels"
+    str_ch.close()
+    
+    for word in str_ch:
+        print("  Word:", word)
+    
+    # Test 3: Sum values from channel
+    print("\nTest 3: Sum values")
+    let num_ch = chan<int>(10)
+    
+    for i in range(10):
+        num_ch <- i
+    num_ch.close()
+    
+    let sum = 0
+    for n in num_ch:
+        sum = sum + n
+    
+    print("Sum:", sum)
+    
+    print("\n✓ Channel iteration test complete!")
+
+main()

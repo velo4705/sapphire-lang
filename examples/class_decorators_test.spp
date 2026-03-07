@@ -1,0 +1,41 @@
+# Class Decorators Test
+
+print("=== Class Decorators Test ===\n")
+
+# Test 1: @singleton decorator
+print("Test 1: @singleton decorator")
+
+@singleton
+class Config:
+    fn __init__(self, setting: str):
+        self.setting = setting
+        print("  Config instance created with setting:", setting)
+    
+    fn get_setting(self):
+        return self.setting
+
+print("Creating first Config instance:")
+let config1 = Config("production")
+print("Setting:", config1.get_setting())
+
+print("\nCreating second Config instance (should reuse first):")
+let config2 = Config("development")
+print("Setting:", config2.get_setting())
+
+print("\nAre they the same instance?")
+print("config1.setting:", config1.get_setting())
+print("config2.setting:", config2.get_setting())
+
+# Test 2: @dataclass decorator (placeholder)
+print("\n\nTest 2: @dataclass decorator")
+
+@dataclass
+class Point:
+    fn __init__(self, x: int, y: int):
+        self.x = x
+        self.y = y
+
+let p = Point(10, 20)
+print("Point created: x =", p.x, ", y =", p.y)
+
+print("\n✓ Class decorators test complete!")

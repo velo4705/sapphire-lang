@@ -1,0 +1,262 @@
+# Complete Concurrency Features Demo
+# Showcases all Milestone 3 features: async/await, channels, select, go, WaitGroup
+
+print("╔═══════════════════════════════════════════════════╗")
+print("║  Sapphire Complete Concurrency Demo              ║")
+print("╚═══════════════════════════════════════════════════╝\n")
+
+# ============================================
+# Feature 1: Async/Await
+# ============================================
+print("=== Feature 1: Async/Await ===")
+
+async fn fetch_data(id: int) -> int:
+    return id * 100
+
+async fn process_async():
+    let result1 = await fetch_data(1)
+    let result2 = await fetch_data(2)
+    return result1 + result2
+
+let async_result = await process_async()
+print("Async result:", async_result)
+
+# ============================================
+# Feature 2: Channels with Iteration
+# ============================================
+print("\n=== Feature 2: Channels with Iteration ===")
+
+let data_ch = chan<int>(5)
+
+# Fill channel
+for i in range(5):
+    data_ch <- i * 2
+
+data_ch.close()
+
+# Iterate over channel
+print("Channel values:")
+for value in data_ch:
+    print("  ", value)
+
+# ============================================
+# Feature 3: Select Statement
+# ============================================
+print("\n=== Feature 3: Select Statement ===")
+
+let ch1 = chan<int>(3)
+let ch2 = chan<str>(3)
+
+ch1 <- 42
+ch2 <- "hello"
+ch1 <- 84
+
+print("Select operations:")
+for i in range(3):
+    select:
+        case x = <-ch1:
+            print("  From ch1:", x)
+        case y = <-ch2:
+            print("  From ch2:", y)
+        default:
+            print("  No data")
+
+# ============================================
+# Feature 4: Goroutines
+# ============================================
+print("\n=== Feature 4: Goroutines ===")
+
+fn worker(id: int, jobs, results):
+    print("Worker", id, "started")
+    for job in jobs:
+        results <- job * 2
+    print("Worker", id, "finished")
+
+let jobs = chan<int>(10)
+let results = chan<int>(10)
+
+# Fill jobs
+for i in range(5):
+    jobs <- i
+jobs.close()
+
+# Spawn workers
+go worker(1, jobs, results)
+
+# Collect results
+print("Results:")
+for i in range(5):
+    let result = <-results
+    print("  ", result)
+
+# ============================================
+# Feature 5: WaitGroup
+# ============================================
+print("\n=== Feature 5: WaitGroup ===")
+
+let wg = WaitGroup()
+
+fn task(id: int, wg):
+    print("Task", id, "running")
+    wg.done()
+
+wg.add(3)
+go task(1, wg)
+go task(2, wg)
+go task(3, wg)
+
+wg.wait()
+print("All tasks completed")
+
+# ============================================
+# Feature 6: Producer-Consumer Pattern
+# ============================================
+print("\n=== Feature 6: Producer-Consumer Pattern ===")
+
+let wg2 = WaitGroup()
+let work_ch = chan<int>(10)
+
+fn producer(id: int, ch, wg):
+    for i in range(3):
+        ch <- id * 10 + i
+    wg.done()
+
+fn consumer(ch):
+    let sum = 0
+    for value in ch:
+        sum = sum + value
+    return sum
+
+# Start producers
+wg2.add(2)
+go producer(1, work_ch, wg2)
+go producer(2, work_ch, wg2)
+
+# Wait for producers
+wg2.wait()
+work_ch.close()
+
+# Consume
+let total = consumer(work_ch)
+print("Total sum:", total)
+
+# ============================================
+# Feature 7: Multi-Channel Coordination
+# ============================================
+print("\n=== Feature 7: Multi-Channel Coordination ===")
+
+let data = chan<int>(5)
+let control = chan<str>(5)
+let errors = chan<str>(5)
+
+# Send mixed messages
+data <- 100
+control <- "start"
+data <- 200
+errors <- "warning"
+control <- "stop"
+
+print("Processing messages:")
+for i in range(5):
+    select:
+        case d = <-data:
+            print("  Data:", d)
+        case c = <-control:
+            print("  Control:", c)
+        case e = <-errors:
+            print("  Error:", e)
+
+# ============================================
+# Feature 8: Async with Channels
+# ============================================
+print("\n=== Feature 8: Async with Channels ===")
+
+async fn async_producer(ch):
+    for i in range(3):
+        ch <- i * 3
+    ch.close()
+    return "Producer done"
+
+let async_ch = chan<int>(5)
+let status = await async_producer(async_ch)
+print(status)
+
+print("Values:")
+for val in async_ch:
+    print("  ", val)
+
+# ============================================
+# Feature 9: Channel Methods
+# ============================================
+print("\n=== Feature 9: Channel Methods ===")
+
+let test_ch = chan<int>(3)
+print("Empty?", test_ch.empty())
+print("Closed?", test_ch.is_closed())
+
+test_ch <- 1
+test_ch <- 2
+print("Size:", test_ch.size())
+
+test_ch.close()
+print("After close - Closed?", test_ch.is_closed())
+
+# Can still read
+let v1 = <-test_ch
+let v2 = <-test_ch
+print("Read values:", v1, v2)
+
+# ============================================
+# Feature 10: Complex Workflow
+# ============================================
+print("\n=== Feature 10: Complex Workflow ===")
+
+let wg3 = WaitGroup()
+let pipeline_ch = chan<int>(10)
+let output_ch = chan<int>(10)
+
+fn stage1(input, output, wg):
+    for value in input:
+        output <- value * 2
+    output.close()
+    wg.done()
+
+fn stage2(input, wg):
+    let sum = 0
+    for value in input:
+        sum = sum + value
+    print("Pipeline sum:", sum)
+    wg.done()
+
+# Fill input
+for i in range(5):
+    pipeline_ch <- i
+pipeline_ch.close()
+
+# Run pipeline
+wg3.add(2)
+go stage1(pipeline_ch, output_ch, wg3)
+go stage2(output_ch, wg3)
+
+wg3.wait()
+print("Pipeline complete")
+
+# ============================================
+# Summary
+# ============================================
+print("\n╔═══════════════════════════════════════════════════╗")
+print("║  All Concurrency Features Demonstrated           ║")
+print("╠═══════════════════════════════════════════════════╣")
+print("║  ✓ Async/Await                                    ║")
+print("║  ✓ Channels (buffered & unbuffered)               ║")
+print("║  ✓ Channel Iteration                              ║")
+print("║  ✓ Channel Methods                                ║")
+print("║  ✓ Select Statement                               ║")
+print("║  ✓ Goroutines                                     ║")
+print("║  ✓ WaitGroup                                      ║")
+print("║  ✓ Producer-Consumer Pattern                      ║")
+print("║  ✓ Multi-Channel Coordination                     ║")
+print("║  ✓ Complex Workflows                              ║")
+print("╚═══════════════════════════════════════════════════╝")
+
+print("\n✓ Milestone 3 Complete - 100%!")

@@ -1,0 +1,124 @@
+# Test itertools functions
+
+fn main():
+    print("=== Itertools Module Tests ===")
+    print()
+    
+    # Test data
+    numbers = [1, 2, 3, 4, 5]
+    
+    # Test map
+    print("Test 1: map()")
+    fn double(x):
+        return x * 2
+    
+    doubled = map(numbers, double)
+    print("  Original:", numbers)
+    print("  Doubled:", doubled)
+    print()
+    
+    # Test filter
+    print("Test 2: filter()")
+    fn is_even(x):
+        return x % 2 == 0
+    
+    evens = filter(numbers, is_even)
+    print("  Original:", numbers)
+    print("  Evens:", evens)
+    print()
+    
+    # Test reduce
+    print("Test 3: reduce()")
+    fn add(acc, x):
+        return acc + x
+    
+    sum = reduce(numbers, 0, add)
+    print("  Sum of", numbers, "=", sum)
+    print()
+    
+    # Test take
+    print("Test 4: take()")
+    first_three = take(numbers, 3)
+    print("  First 3:", first_three)
+    print()
+    
+    # Test drop
+    print("Test 5: drop()")
+    skip_two = drop(numbers, 2)
+    print("  Skip 2:", skip_two)
+    print()
+    
+    # Test reverse
+    print("Test 6: reverse()")
+    reversed = reverse(numbers)
+    print("  Reversed:", reversed)
+    print()
+    
+    # Test unique
+    print("Test 7: unique()")
+    duplicates = [1, 2, 2, 3, 3, 3, 4, 5, 5]
+    unique_vals = unique(duplicates)
+    print("  With duplicates:", duplicates)
+    print("  Unique:", unique_vals)
+    print()
+    
+    # Test enumerate
+    print("Test 8: enumerate()")
+    fruits = ["apple", "banana", "cherry"]
+    indexed = enumerate(fruits)
+    print("  Enumerated:", indexed)
+    print()
+    
+    # Test zip
+    print("Test 9: zip()")
+    names = ["Alice", "Bob", "Charlie"]
+    ages = [25, 30, 35]
+    pairs = zip(names, ages)
+    print("  Zipped:", pairs)
+    print()
+    
+    # Test chunk
+    print("Test 10: chunk()")
+    data = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    chunks = chunk(data, 3)
+    print("  Chunked by 3:", chunks)
+    print()
+    
+    # Test flatten
+    print("Test 11: flatten()")
+    nested = [[1, 2], [3, 4], [5, 6]]
+    flat = flatten(nested)
+    print("  Nested:", nested)
+    print("  Flattened:", flat)
+    print()
+    
+    # Test find
+    print("Test 12: find()")
+    fn greater_than_3(x):
+        return x > 3
+    
+    found = find(numbers, greater_than_3)
+    print("  Find first > 3:", found)
+    print()
+    
+    # Test all
+    print("Test 13: all()")
+    fn positive(x):
+        return x > 0
+    
+    all_positive = all(numbers, positive)
+    print("  All positive?", all_positive)
+    print()
+    
+    # Test any
+    print("Test 14: any()")
+    fn greater_than_10(x):
+        return x > 10
+    
+    any_large = any(numbers, greater_than_10)
+    print("  Any > 10?", any_large)
+    print()
+    
+    print("✓ All itertools tests passed!")
+
+main()

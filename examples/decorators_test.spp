@@ -1,0 +1,61 @@
+# Decorators Test
+
+print("=== Decorators Test ===\n")
+
+# Test 1: Simple decorator
+print("Test 1: Simple decorator")
+
+fn my_decorator(func):
+    fn wrapper():
+        print("Before function")
+        func()
+        print("After function")
+    return wrapper
+
+@my_decorator
+fn greet():
+    print("Hello, World!")
+
+greet()
+
+# Test 2: Decorator with function arguments
+print("\nTest 2: Decorator with arguments")
+
+fn log_decorator(func):
+    fn wrapper(name: str):
+        print("Calling function with:", name)
+        func(name)
+        print("Function completed")
+    return wrapper
+
+@log_decorator
+fn say_hello(name: str):
+    print("Hello,", name)
+
+say_hello("Alice")
+
+# Test 3: Multiple decorators
+print("\nTest 3: Multiple decorators")
+
+fn decorator1(func):
+    fn wrapper():
+        print("Decorator 1 - Before")
+        func()
+        print("Decorator 1 - After")
+    return wrapper
+
+fn decorator2(func):
+    fn wrapper():
+        print("Decorator 2 - Before")
+        func()
+        print("Decorator 2 - After")
+    return wrapper
+
+@decorator1
+@decorator2
+fn test_multi():
+    print("Original function")
+
+test_multi()
+
+print("\n✓ Decorators test complete!")

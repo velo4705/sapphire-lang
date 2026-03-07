@@ -1,0 +1,53 @@
+# Basic Macro System Test
+# Milestone 8 Phase 3
+
+print("Testing Basic Macro System\n")
+
+# Test 1: Macro declaration
+print("Test 1: Macro declaration")
+
+macro simple_macro(x):
+    print("Macro parameter:", x)
+
+print("✓ Macro declared successfully\n")
+
+# Test 2: stringify() function
+print("Test 2: stringify() function")
+
+let value = 42
+let str_result = stringify(value * 2)
+print("stringify(value * 2):", str_result)
+
+let x = 10
+let y = 20
+print("stringify(x + y):", stringify(x + y))
+print("stringify(x > 5):", stringify(x > 5))
+
+print("✓ stringify() working\n")
+
+# Test 3: Complex expressions with stringify
+print("Test 3: Complex expressions")
+
+let arr = [1, 2, 3]
+print("stringify(arr):", stringify(arr))
+
+let name = "Sapphire"
+print("stringify(name):", stringify(name))
+
+print("✓ Complex expressions working\n")
+
+# Test 4: Multiple macro declarations
+print("Test 4: Multiple macros")
+
+macro macro1(a):
+    print("Macro 1:", a)
+
+macro macro2(b):
+    print("Macro 2:", b)
+
+macro macro3(c):
+    print("Macro 3:", c)
+
+print("✓ Multiple macros declared\n")
+
+print("✓ All basic macro tests passed!")

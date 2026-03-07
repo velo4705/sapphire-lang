@@ -1,0 +1,14 @@
+# Rest Pattern Test
+
+fn describe_with_rest(lst):
+    return match lst:
+        [] => "empty"
+        [x] => "single"
+        [first, ...rest] => "first and rest"
+        _ => "other"
+
+print("Testing rest patterns:")
+print(describe_with_rest([]))
+print(describe_with_rest([1]))
+print(describe_with_rest([1, 2]))
+print(describe_with_rest([1, 2, 3, 4]))

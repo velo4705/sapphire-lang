@@ -9,12 +9,14 @@
 #include "semantic/type_inference.h"
 #include "codegen/llvm_codegen.h"
 #include "codegen/llvm_codegen.h"
+#include "repl/repl.h"
 
 void printUsage(const char* program) {
     (void)program;
     std::cout << "Sapphire Programming Language 💎\n";
     std::cout << "A Fast and Powerful Language built with simplicity on top.\n\n";
     std::cout << "Usage:\n";
+    std::cout << "  sapp                         # Start interactive REPL\n";
     std::cout << "  sapp <file.spp>              # Run a program (interpreter)\n";
     std::cout << "  sapp compile <file.spp>      # Compile and show LLVM IR\n";
     std::cout << "  sapp --version               # Show version\n";
@@ -105,9 +107,11 @@ void updateSapphire() {
 }
 
 int main(int argc, char* argv[]) {
+    // No arguments - start REPL
     if (argc < 2) {
-        printUsage(argv[0]);
-        return 1;
+        sapphire::REPL repl;
+        repl.run();
+        return 0;
     }
 
     std::string arg = argv[1];

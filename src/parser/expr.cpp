@@ -42,4 +42,28 @@ void SetExpr::accept(ExprVisitor& visitor) {
     visitor.visitSetExpr(*this);
 }
 
+void MatchExpr::accept(ExprVisitor& visitor) {
+    visitor.visitMatchExpr(*this);
+}
+
+void AwaitExpr::accept(ExprVisitor& visitor) {
+    visitor.visitAwaitExpr(*this);
+}
+
+void ChannelExpr::accept(ExprVisitor& visitor) {
+    visitor.visitChannelExpr(*this);
+}
+
+void ChannelReceiveExpr::accept(ExprVisitor& visitor) {
+    visitor.visitChannelReceiveExpr(*this);
+}
+
+void TryExpr::accept(ExprVisitor& visitor) {
+    visitor.visitTryExpr(*this);
+}
+
+void StringifyExpr::accept(ExprVisitor& visitor) {
+    visitor.visitStringifyExpr(*this);
+}
+
 } // namespace sapphire

@@ -1,0 +1,43 @@
+# Test the testing module
+
+fn test_assertions():
+    print("=== Testing Module Tests ===")
+    print()
+    
+    # Test assert_true
+    print("Test 1: assert_true()")
+    assert_true(true, "This should pass")
+    assert_true(5 > 3, "5 is greater than 3")
+    print("  ✓ assert_true passed")
+    print()
+    
+    # Test assert_false
+    print("Test 2: assert_false()")
+    assert_false(false, "This should pass")
+    assert_false(5 < 3, "5 is not less than 3")
+    print("  ✓ assert_false passed")
+    print()
+    
+    # Test assert_equal
+    print("Test 3: assert_equal()")
+    assert_equal(2 + 2, 4, "2 + 2 should equal 4")
+    assert_equal("hello", "hello", "Strings should match")
+    print("  ✓ assert_equal passed")
+    print()
+    
+    print("✓ All testing module tests passed!")
+
+fn test_failure_example():
+    print()
+    print("=== Testing Failure Example ===")
+    print("(This will throw an error)")
+    print()
+    
+    # This will fail
+    assert_true(false, "This assertion should fail")
+
+# Run tests
+test_assertions()
+
+# Uncomment to see failure:
+# test_failure_example()

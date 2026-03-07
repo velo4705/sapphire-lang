@@ -1,0 +1,51 @@
+# Basic Pattern Matching Examples
+
+fn classify_number(n: int) -> str:
+    return match n:
+        0 => "zero"
+        1 => "one"
+        2 => "two"
+        _ => "other"
+
+fn check_sign(n: int) -> str:
+    return match n:
+        x if x < 0 => "negative"
+        x if x > 0 => "positive"
+        _ => "zero"
+
+fn check_parity(n: int) -> str:
+    return match n:
+        x if x % 2 == 0 => "even"
+        _ => "odd"
+
+fn describe_list(items: list) -> str:
+    return match items:
+        [] => "empty list"
+        [x] => "single item"
+        [first, second] => "two items"
+        _ => "many items"
+
+fn main():
+    # Test basic patterns
+    print("Testing basic patterns:")
+    print(classify_number(0))
+    print(classify_number(1))
+    print(classify_number(5))
+    
+    # Test guards
+    print("\nTesting guards:")
+    print(check_sign(-5))
+    print(check_sign(0))
+    print(check_sign(10))
+    
+    # Test parity
+    print("\nTesting parity:")
+    print(check_parity(4))
+    print(check_parity(7))
+    
+    # Test list patterns
+    print("\nTesting list patterns:")
+    print(describe_list([]))
+    print(describe_list([1]))
+    print(describe_list([1, 2]))
+    print(describe_list([1, 2, 3]))

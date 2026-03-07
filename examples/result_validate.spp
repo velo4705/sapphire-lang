@@ -1,0 +1,12 @@
+# Test validate_positive with double
+
+fn validate_positive(x):
+    print("  validate_positive got:", x, "type check...")
+    if x <= 0:
+        print("  x <= 0 is true")
+        return Err("not positive")
+    print("  x > 0, returning Ok")
+    return Ok(x)
+
+let r = validate_positive(10.0)
+print("Result:", r)

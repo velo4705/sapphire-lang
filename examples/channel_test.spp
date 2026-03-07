@@ -1,0 +1,25 @@
+# Simple channel test
+
+fn main():
+    # Create a buffered channel with capacity 3
+    let ch = chan<int>(3)
+    
+    # Send some values
+    ch <- 1
+    ch <- 2
+    ch <- 3
+    
+    print("Sent 3 values to channel")
+    
+    # Receive values
+    let val1 = <-ch
+    let val2 = <-ch
+    let val3 = <-ch
+    
+    print("Received:", val1)
+    print("Received:", val2)
+    print("Received:", val3)
+    
+    print("Channel test complete!")
+
+main()

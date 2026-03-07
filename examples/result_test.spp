@@ -1,0 +1,120 @@
+# Result Type Test - Milestone 5 Phase 2
+
+print("=== Result Type Test ===\n")
+
+# Basic Result construction
+print("1. Basic Construction:")
+let ok_value = Ok(42)
+let err_value = Err("something went wrong")
+
+print("  ok_value:", ok_value)
+print("  err_value:", err_value)
+
+# is_ok and is_err methods
+print("\n2. Checking Result State:")
+print("  ok_value.is_ok():", ok_value.is_ok())
+print("  ok_value.is_err():", ok_value.is_err())
+print("  err_value.is_ok():", err_value.is_ok())
+print("  err_value.is_err():", err_value.is_err())
+
+# unwrap and unwrap_or methods
+print("\n3. Unwrapping Values:")
+print("  ok_value.unwrap():", ok_value.unwrap())
+print("  err_value.unwrap_or(0):", err_value.unwrap_or(0))
+print("  ok_value.unwrap_or(999):", ok_value.unwrap_or(999))
+
+# unwrap_err method
+print("\n4. Unwrapping Errors:")
+print("  err_value.unwrap_err():", err_value.unwrap_err())
+
+# Pattern matching with Result
+print("\n5. Pattern Matching:")
+print("  Matching ok_value:")
+match ok_value:
+    Ok(x) => print("    Got Ok with value:", x)
+    Err(e) => print("    Got Err with error:", e)
+
+print("  Matching err_value:")
+match err_value:
+    Ok(x) => print("    Got Ok with value:", x)
+    Err(e) => print("    Got Err with error:", e)
+
+# map method
+print("\n6. Using map:")
+fn double(x):
+    return x * 2
+
+let doubled = ok_value.map(double)
+print("  ok_value.map(double):", doubled)
+
+let err_mapped = err_value.map(double)
+print("  err_value.map(double):", err_mapped)
+
+# map_err method
+print("\n7. Using map_err:")
+fn add_context(e):
+    return "Error: " + e
+
+let ok_err_mapped = ok_value.map_err(add_context)
+print("  ok_value.map_err(add_context):", ok_err_mapped)
+
+let err_err_mapped = err_value.map_err(add_context)
+print("  err_value.map_err(add_context):", err_err_mapped)
+
+# and_then method
+print("\n8. Using and_then:")
+fn safe_divide(x):
+    if x == 0:
+        return Err("division by zero")
+    return Ok(100 / x)
+
+let result1 = Ok(10).and_then(safe_divide)
+print("  Ok(10).and_then(safe_divide):", result1)
+
+let result2 = Ok(0).and_then(safe_divide)
+print("  Ok(0).and_then(safe_divide):", result2)
+
+let result3 = Err("input error").and_then(safe_divide)
+print("  Err('input error').and_then(safe_divide):", result3)
+
+# Practical example: file operations
+print("\n9. Practical Example - File Operations:")
+fn read_config(filename):
+    if filename == "config.json":
+        return Ok("port=8080")
+    return Err("file not found")
+
+fn parse_config(content):
+    if content == "port=8080":
+        return Ok(8080)
+    return Err("invalid format")
+
+let config_result = read_config("config.json").and_then(parse_config)
+match config_result:
+    Ok(port) => print("  Server port:", port)
+    Err(error) => print("  Configuration error:", error)
+
+let bad_config = read_config("missing.json").and_then(parse_config)
+match bad_config:
+    Ok(port) => print("  Server port:", port)
+    Err(error) => print("  Configuration error:", error)
+
+# Multiple error types
+print("\n10. Multiple Error Types:")
+fn validate_age(age):
+    if age < 0:
+        return Err("negative age")
+    if age > 150:
+        return Err("age too high")
+    return Ok(age)
+
+let ages = [-5, 25, 200]
+let i = 0
+while i < len(ages):
+    let result = validate_age(ages[i])
+    match result:
+        Ok(a) => print("  Age", a, "is valid")
+        Err(e) => print("  Age", ages[i], "is invalid:", e)
+    i = i + 1
+
+print("\n=== Result type test complete! ===")

@@ -1,0 +1,127 @@
+# Milestone 5 Complete Demo - All Features Working Together
+
+print("╔════════════════════════════════════════════════════════╗")
+print("║  Milestone 5: Result/Option Types & ? Operator        ║")
+print("║  All Features Working Together                         ║")
+print("╚════════════════════════════════════════════════════════╝\n")
+
+# Demonstrate Option<T>
+print("1. Option<T> - Safe nullable values")
+print("─────────────────────────────────────────────────────────")
+
+fn find_user(id):
+    if id == 1:
+        return Some("alice")
+    if id == 2:
+        return Some("bob")
+    return None()
+
+let user1 = find_user(1)
+let user2 = find_user(99)
+
+print("  find_user(1):", user1)
+print("  find_user(99):", user2)
+
+match user1:
+    Some(name) => print("  Found user:", name)
+    None => print("  User not found")
+
+print("  user2.unwrap_or('guest'):", user2.unwrap_or("guest"), "\n")
+
+# Demonstrate Result<T, E>
+print("2. Result<T, E> - Type-safe error handling")
+print("─────────────────────────────────────────────────────────")
+
+fn divide(a, b):
+    if b == 0:
+        return Err("division by zero")
+    return Ok(a / b)
+
+let success = divide(10, 2)
+let failure = divide(10, 0)
+
+print("  divide(10, 2):", success)
+print("  divide(10, 0):", failure)
+
+match success:
+    Ok(value) => print("  Success:", value)
+    Err(error) => print("  Error:", error)
+
+print("  failure.unwrap_or(0):", failure.unwrap_or(0), "\n")
+
+# Demonstrate ? operator
+print("3. ? Operator - Elegant error propagation")
+print("─────────────────────────────────────────────────────────")
+
+fn validate_positive(x):
+    if x > 0:
+        return Ok(x)
+    return Err("not positive")
+
+fn calculate_with_propagation(a, b, c):
+    let x = divide(a, b)?
+    let validated = validate_positive(x)?
+    let y = divide(validated, c)?
+    return Ok(y)
+
+let result1 = calculate_with_propagation(20, 2, 5)
+let result2 = calculate_with_propagation(20, 0, 5)
+let result3 = calculate_with_propagation(20, 2, 0)
+
+print("  calculate(20, 2, 5):", result1)
+print("  calculate(20, 0, 5):", result2)
+print("  calculate(20, 2, 0):", result3, "\n")
+
+# Demonstrate all three together
+print("4. Combined Usage - Real-world pattern")
+print("─────────────────────────────────────────────────────────")
+
+fn get_user_id(username):
+    if username == "alice":
+        return Some(1)
+    if username == "bob":
+        return Some(2)
+    return None()
+
+fn authenticate(user_id, password):
+    if user_id == 1:
+        if password == "pass123":
+            return Ok("token_alice")
+    if user_id == 2:
+        if password == "secret":
+            return Ok("token_bob")
+    return Err("authentication failed")
+
+fn get_data(token):
+    if token == "token_alice":
+        return Ok("alice_data")
+    if token == "token_bob":
+        return Ok("bob_data")
+    return Err("invalid token")
+
+fn login_and_fetch(username, password):
+    # Use Option for user lookup
+    let user_id_opt = get_user_id(username)
+    
+    # Check if user exists
+    if user_id_opt.is_none():
+        return Err("user not found")
+    
+    # Use Result with ? for error propagation
+    let user_id = user_id_opt.unwrap()
+    let token = authenticate(user_id, password)?
+    let data = get_data(token)?
+    return Ok(data)
+
+print("  login_and_fetch('alice', 'pass123'):", login_and_fetch("alice", "pass123"))
+print("  login_and_fetch('alice', 'wrong'):", login_and_fetch("alice", "wrong"))
+print("  login_and_fetch('charlie', 'any'):", login_and_fetch("charlie", "any"), "\n")
+
+# Summary
+print("╔════════════════════════════════════════════════════════╗")
+print("║  ✓ Option<T> - Safe nullable values                   ║")
+print("║  ✓ Result<T, E> - Type-safe error handling            ║")
+print("║  ✓ ? Operator - Elegant error propagation             ║")
+print("║                                                        ║")
+print("║  Milestone 5: COMPLETE                                 ║")
+print("╚════════════════════════════════════════════════════════╝")

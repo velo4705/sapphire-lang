@@ -1,0 +1,45 @@
+# Property Decorator Test
+
+print("=== Property Decorator Test ===\n")
+
+# Test 1: Simple property
+print("Test 1: Simple property (read-only)")
+
+class Circle:
+    fn __init__(self, radius: float):
+        self._radius = radius
+    
+    @property
+    fn radius(self) -> float:
+        return self._radius
+    
+    @property
+    fn area(self) -> float:
+        return 3.14159 * self._radius * self._radius
+
+let c = Circle(5.0)
+print("Circle radius:", c.radius())
+print("Circle area:", c.area())
+
+# Test 2: Property with computation
+print("\n\nTest 2: Property with computation")
+
+class Rectangle:
+    fn __init__(self, width: int, height: int):
+        self.width = width
+        self.height = height
+    
+    @property
+    fn area(self) -> int:
+        print("  Computing area...")
+        return self.width * self.height
+    
+    @property
+    fn perimeter(self) -> int:
+        return 2 * (self.width + self.height)
+
+let rect = Rectangle(4, 6)
+print("Rectangle area:", rect.area())
+print("Rectangle perimeter:", rect.perimeter())
+
+print("\n✓ Property test complete!")

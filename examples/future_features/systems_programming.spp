@@ -1,0 +1,232 @@
+# Systems Programming in Sapphire
+# Low-level system utilities and kernel-level code
+
+import sys::{memory, process, syscall, signal}
+import os::{fs, path}
+
+# ============ Custom Memory Allocator ============
+class MemoryPool:
+    
+    fn new(block_size: usize, initial_blocks: usize) -> Self:
+        let pool = MemoryPool(
+            blocks=[],
+            free_list=[],
+            block_size=block_size
+        )
+        pool.expand(initial_blocks)
+        return pool
+    
+    unsafe fn allocate(self) -> Result<*mut u8, Error>:
+        if self.free_list.is_empty():
+            self.expand(10)
+        
+        return Ok(self.free_list.pop())
+    
+    unsafe fn deallocate(self, ptr: *mut u8):
+        self.free_list.append(ptr)
+    
+    unsafe fn expand(self, count: usize):
+        let size = self.block_size * count
+        let ptr = syscall.mmap(
+            null,
+            size,
+            PROT_READ | PROT_WRITE,
+            MAP_PRIVATE | MAP_ANONYMOUS
+        ) as *mut u8
+        
+        for i in range(count):
+            self.free_list.append(ptr + i * self.block_size)
+
+# ============ Process Management ============
+class ProcessManager:
+    
+    fn spawn(self, program: str, args: List<str>) -> Result<pid_t, Error>:
+        let pid = unsafe { syscall.fork() }
+        
+        match pid:
+            0:  # Child process
+                unsafe:
+                    syscall.execve(program, args, environ)
+                unreachable()
+            -1:  # Error
+                return Err(Error.from_errno())
+            _:  # Parent process
+                let process = Process(pid=pid, program=program)
+                self.processes[pid] = process
+                return Ok(pid)
+    
+    async fn wait(self, pid: pid_t) -> Result<int, Error>:
+        let status: int = 0
+        let result = unsafe { syscall.waitpid(pid, &status, 0) }
+        
+        if result == -1:
+            return Err(Error.from_errno())
+        
+        return Ok(WEXITSTATUS(status))
+    
+    fn kill(self, pid: pid_t, signal: Signal) -> Result<(), Error>:
+        let result = unsafe { syscall.kill(pid, signal as int) }
+        if result == -1:
+            return Err(Error.from_errno())
+        return Ok(())
+
+# ============ File System Operations ============
+class FileSystem:
+    @staticmethod
+    fn copy_file(src: str, dst: str) -> Result<(), Error>:
+        # Open source file
+        let src_fd = unsafe { 
+            syscall.open(src.as_ptr(), O_RDONLY, 0)
+        }
+        if src_fd < 0:
+            return Err(Error.from_errno())
+        
+        defer unsafe { syscall.close(src_fd) }
+        
+        # Get file stats
+        let stat: Stat = Stat.default()
+        unsafe { syscall.fstat(src_fd, &stat) }
+        
+        # Open destination file
+        let dst_fd = unsafe {
+            syscall.open(dst.as_ptr(), O_WRONLY | O_CREAT | O_TRUNC, stat.st_mode)
+        }
+        if dst_fd < 0:
+            return Err(Error.from_errno())
+        
+        defer unsafe { syscall.close(dst_fd) }
+        
+        # Copy using sendfile (zero-copy)
+        let mut offset: off_t = 0
+        while offset < stat.st_size:
+            let result = unsafe {
+                syscall.sendfile(dst_fd, src_fd, &offset, stat.st_size - offset)
+            }
+            if result < 0:
+                return Err(Error.from_errno())
+        
+        return Ok(())
+    
+    @staticmethod
+    fn watch_directory(path: str, callback: fn(Event)) -> Result<Watcher, Error>:
+        let fd = unsafe { syscall.inotify_init() }
+        if fd < 0:
+            return Err(Error.from_errno())
+        
+        let wd = unsafe {
+            syscall.inotify_add_watch(
+                fd,
+                path.as_ptr(),
+                IN_CREATE | IN_DELETE | IN_MODIFY
+            )
+        }
+        
+        spawn:
+            let buffer = [0u8; 4096]
+            loop:
+                let len = unsafe { syscall.read(fd, buffer.as_ptr(), buffer.len()) }
+                if len > 0:
+                    let event = parse_inotify_event(buffer)
+                    callback(event)
+        
+        return Ok(Watcher(fd, wd))
+
+# ============ Network Socket Programming ============
+class TcpServer:
+    
+    fn new(host: str, port: u16) -> Result<Self, Error>:
+        # Create socket
+        let fd = unsafe {
+            syscall.socket(AF_INET, SOCK_STREAM, 0)
+        }
+        if fd < 0:
+            return Err(Error.from_errno())
+        
+        # Set socket options
+        let optval: int = 1
+        unsafe {
+            syscall.setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(int))
+        }
+        
+        # Bind
+        let addr = SocketAddr.new(host, port)
+        let result = unsafe {
+            syscall.bind(fd, &addr as *const sockaddr, sizeof(sockaddr))
+        }
+        if result < 0:
+            return Err(Error.from_errno())
+        
+        # Listen
+        unsafe { syscall.listen(fd, 128) }
+        
+        return Ok(TcpServer(socket_fd=fd, address=addr))
+    
+    async fn accept(self) -> Result<TcpStream, Error>:
+        let client_addr: sockaddr = sockaddr.default()
+        let addr_len: socklen_t = sizeof(sockaddr)
+        
+        let client_fd = unsafe {
+            syscall.accept(self.socket_fd, &client_addr, &addr_len)
+        }
+        
+        if client_fd < 0:
+            return Err(Error.from_errno())
+        
+        return Ok(TcpStream(fd=client_fd, addr=client_addr))
+    
+    fn close(self):
+        unsafe { syscall.close(self.socket_fd) }
+
+# ============ Signal Handling ============
+let signal_handlers: Map<Signal, fn(Signal)> = {}
+
+fn register_signal_handler(signal: Signal, handler: fn(Signal)):
+    signal_handlers[signal] = handler
+    
+    unsafe:
+        let action = sigaction(
+            sa_handler=signal_trampoline,
+            sa_flags=SA_RESTART
+        )
+        syscall.sigaction(signal as int, &action, null)
+
+fn signal_trampoline(signum: int):
+    let signal = Signal.from_int(signum)
+    if let Some(handler) = signal_handlers.get(signal):
+        handler(signal)
+
+# ============ Main Example ============
+async fn main():
+    # Set up signal handlers
+    register_signal_handler(Signal.SIGINT, lambda sig:
+        print("\nReceived SIGINT, shutting down...")
+        exit(0)
+    )
+    
+    # Create memory pool
+    let pool = MemoryPool.new(block_size=4096, initial_blocks=100)
+    
+    # Spawn a process
+    let pm = ProcessManager()
+    let pid = pm.spawn("/bin/ls", ["-la"])?
+    print(f"Spawned process {pid}")
+    
+    let exit_code = await pm.wait(pid)?
+    print(f"Process exited with code {exit_code}")
+    
+    # Copy a file
+    FileSystem.copy_file("source.txt", "destination.txt")?
+    
+    # Start TCP server
+    let server = TcpServer.new("127.0.0.1", 8080)?
+    print("Server listening on 127.0.0.1:8080")
+    
+    loop:
+        let client = await server.accept()?
+        spawn handle_client(client)
+
+async fn handle_client(client: TcpStream):
+    let buffer = [0u8; 1024]
+    let n = client.read(&buffer)?
+    client.write(b"HTTP/1.1 200 OK\r\n\r\nHello, World!")?
+    client.close()

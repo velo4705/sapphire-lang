@@ -1,0 +1,78 @@
+# Comprehensive Pattern Matching Test
+
+print("=== Basic Patterns ===")
+
+fn classify(n):
+    return match n:
+        0 => "zero"
+        1 => "one"
+        2 => "two"
+        _ => "other"
+
+print(classify(0))
+print(classify(1))
+print(classify(2))
+print(classify(99))
+
+print("\n=== Guard Clauses ===")
+
+fn check_number(n):
+    return match n:
+        x if x < 0 => "negative"
+        x if x == 0 => "zero"
+        x if x > 0 => "positive"
+        _ => "unknown"
+
+print(check_number(-5))
+print(check_number(0))
+print(check_number(5))
+
+print("\n=== Array Destructuring ===")
+
+fn describe_list(lst):
+    return match lst:
+        [] => "empty"
+        [x] => "single"
+        [a, b] => "pair"
+        [first, ...rest] => "first and rest"
+        _ => "other"
+
+print(describe_list([]))
+print(describe_list([1]))
+print(describe_list([1, 2]))
+print(describe_list([1, 2, 3]))
+
+print("\n=== Object Destructuring ===")
+
+class Point:
+    fn __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+fn describe_point(p):
+    return match p:
+        {x: 0, y: 0} => "origin"
+        {x: 0} => "y-axis"
+        {y: 0} => "x-axis"
+        {x, y} => "point"
+        _ => "other"
+
+print(describe_point(Point(0, 0)))
+print(describe_point(Point(0, 5)))
+print(describe_point(Point(5, 0)))
+print(describe_point(Point(3, 4)))
+
+print("\n=== Nested Patterns ===")
+
+fn describe_nested(data):
+    return match data:
+        [[]] => "nested empty"
+        [[x]] => "nested single"
+        [[a, b]] => "nested pair"
+        _ => "other"
+
+print(describe_nested([[]]))
+print(describe_nested([[1]]))
+print(describe_nested([[1, 2]]))
+
+print("\n✓ All pattern matching features working!")

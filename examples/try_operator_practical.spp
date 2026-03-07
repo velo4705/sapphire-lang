@@ -1,0 +1,150 @@
+# Practical examples of the ? operator - Sapphire v1.3.0
+
+print("Practical ? Operator Examples\n")
+
+# Example 1: File processing pipeline
+print("Example 1: File processing pipeline")
+fn read_file(path):
+    if path == "data.txt":
+        return Ok("100,200,300")
+    return Err("file not found: " + path)
+
+fn parse_csv(content):
+    # Simplified CSV parsing
+    if content == "100,200,300":
+        return Ok([100, 200, 300])
+    return Err("invalid CSV format")
+
+fn sum_values(values):
+    let total = 0
+    for val in values:
+        total = total + val
+    return Ok(total)
+
+fn process_file(path):
+    let content = read_file(path)?
+    let values = parse_csv(content)?
+    let total = sum_values(values)?
+    return Ok(total)
+
+print("  process_file('data.txt'):", process_file("data.txt"))
+print("  process_file('missing.txt'):", process_file("missing.txt"), "\n")
+
+# Example 2: Configuration validation
+print("Example 2: Configuration validation")
+fn load_config(name):
+    if name == "app":
+        return Ok("port=8080")
+    return Err("config not found")
+
+fn parse_port(config):
+    if config == "port=8080":
+        return Ok(8080)
+    return Err("invalid config format")
+
+fn validate_port(port):
+    if port > 1024:
+        if port < 65536:
+            return Ok(port)
+    return Err("port out of range")
+
+fn get_valid_port(config_name):
+    let config = load_config(config_name)?
+    let port = parse_port(config)?
+    let valid_port = validate_port(port)?
+    return Ok(valid_port)
+
+print("  get_valid_port('app'):", get_valid_port("app"))
+print("  get_valid_port('missing'):", get_valid_port("missing"), "\n")
+
+# Example 3: User authentication flow
+print("Example 3: User authentication flow")
+fn check_username(username):
+    if username == "alice":
+        return Ok(username)
+    if username == "bob":
+        return Ok(username)
+    return Err("unknown user")
+
+fn check_password(username, password):
+    if username == "alice":
+        if password == "pass123":
+            return Ok(username)
+    if username == "bob":
+        if password == "secret":
+            return Ok(username)
+    return Err("invalid password")
+
+fn generate_token(username):
+    return Ok("token_" + username)
+
+fn login(username, password):
+    let user = check_username(username)?
+    let verified = check_password(user, password)?
+    let token = generate_token(verified)?
+    return Ok(token)
+
+print("  login('alice', 'pass123'):", login("alice", "pass123"))
+print("  login('alice', 'wrong'):", login("alice", "wrong"))
+print("  login('charlie', 'any'):", login("charlie", "any"), "\n")
+
+# Example 4: Data validation pipeline
+print("Example 4: Data validation pipeline")
+fn parse_age(input):
+    if input == "25":
+        return Ok(25)
+    if input == "30":
+        return Ok(30)
+    return Err("invalid age format")
+
+fn validate_age(age):
+    if age >= 18:
+        if age <= 120:
+            return Ok(age)
+    return Err("age out of valid range")
+
+fn calculate_category(age):
+    if age < 30:
+        return Ok("young adult")
+    if age < 60:
+        return Ok("adult")
+    return Ok("senior")
+
+fn process_age(input):
+    let age = parse_age(input)?
+    let valid_age = validate_age(age)?
+    let category = calculate_category(valid_age)?
+    return Ok(category)
+
+print("  process_age('25'):", process_age("25"))
+print("  process_age('30'):", process_age("30"))
+print("  process_age('invalid'):", process_age("invalid"), "\n")
+
+# Example 5: Chained operations
+print("Example 5: Chained operations")
+fn step_a(x):
+    if x > 0:
+        return Ok(x * 2)
+    return Err("step_a: input must be positive")
+
+fn step_b(x):
+    if x < 100:
+        return Ok(x + 10)
+    return Err("step_b: value too large")
+
+fn step_c(x):
+    if x < 50:
+        return Ok(x * 3)
+    return Err("step_c: value exceeds limit")
+
+fn process_chain(input):
+    let a = step_a(input)?
+    let b = step_b(a)?
+    let c = step_c(b)?
+    return Ok(c)
+
+print("  process_chain(5):", process_chain(5))
+print("  process_chain(0):", process_chain(0))
+print("  process_chain(50):", process_chain(50), "\n")
+
+print("✓ All practical examples completed!")

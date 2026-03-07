@@ -1,0 +1,10 @@
+# Test impl block
+
+trait Test:
+    fn test(self) -> str
+
+impl Test for String:
+    fn test(self) -> str:
+        return "test"
+
+print("Done")

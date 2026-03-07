@@ -1,0 +1,16 @@
+# Array Destructuring Pattern Test
+
+fn describe_list(lst):
+    return match lst:
+        [] => "empty"
+        [x] => "single"
+        [a, b] => "pair"
+        [first, second, third] => "triple"
+        _ => "many"
+
+print("Testing array patterns:")
+print(describe_list([]))
+print(describe_list([1]))
+print(describe_list([1, 2]))
+print(describe_list([1, 2, 3]))
+print(describe_list([1, 2, 3, 4]))

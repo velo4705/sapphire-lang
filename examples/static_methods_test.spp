@@ -1,0 +1,81 @@
+# Static and Class Methods Test
+
+print("=== Static and Class Methods Test ===\n")
+
+# Test 1: @staticmethod
+print("Test 1: @staticmethod")
+
+class MathUtils:
+    @staticmethod
+    fn add(a: int, b: int) -> int:
+        return a + b
+    
+    @staticmethod
+    fn multiply(x: int, y: int) -> int:
+        return x * y
+
+# Call static methods on the class
+print("MathUtils.add(5, 3):", MathUtils.add(5, 3))
+print("MathUtils.multiply(4, 7):", MathUtils.multiply(4, 7))
+
+# Static methods can also be called on instances
+let utils = MathUtils()
+print("utils.add(10, 20):", utils.add(10, 20))
+
+# Test 2: @classmethod
+print("\n\nTest 2: @classmethod")
+
+class Counter:
+    fn __init__(self):
+        self.count = 0
+    
+    @classmethod
+    fn create_with_value(cls, initial: int):
+        let instance = Counter()
+        instance.count = initial
+        return instance
+    
+    fn increment(self):
+        self.count = self.count + 1
+        return self.count
+
+# Call class method on the class to create instances
+print("Creating counter with initial value 10:")
+let counter1 = Counter.create_with_value(10)
+print("counter1.count:", counter1.count)
+print("counter1.increment():", counter1.increment())
+
+print("\nCreating counter with initial value 100:")
+let counter2 = Counter.create_with_value(100)
+print("counter2.count:", counter2.count)
+
+# Test 3: Mixing static, class, and instance methods
+print("\n\nTest 3: Mixed method types")
+
+class Calculator:
+    fn __init__(self, name: str):
+        self.name = name
+    
+    @staticmethod
+    fn pi() -> float:
+        return 3.14159
+    
+    @classmethod
+    fn create_default(cls):
+        print("  Creating default calculator via class method")
+        return Calculator("Default")
+    
+    fn calculate(self, x: int) -> float:
+        return x * Calculator.pi()
+
+print("Calculator.pi():", Calculator.pi())
+
+let calc1 = Calculator.create_default()
+print("calc1.name:", calc1.name)
+print("calc1.calculate(10):", calc1.calculate(10))
+
+let calc2 = Calculator("Custom")
+print("calc2.name:", calc2.name)
+print("calc2.calculate(5):", calc2.calculate(5))
+
+print("\n✓ Static and class methods test complete!")

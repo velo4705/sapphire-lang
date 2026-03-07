@@ -1,0 +1,145 @@
+# Comprehensive test of the ? operator - Sapphire v1.3.0
+
+print("╔════════════════════════════════════════════════════════╗")
+print("║  Sapphire ? Operator - Milestone 5 Phase 3            ║")
+print("╚════════════════════════════════════════════════════════╝\n")
+
+# Feature 1: Basic error propagation
+print("✓ Basic error propagation")
+fn divide(a, b):
+    if b == 0:
+        return Err("division by zero")
+    return Ok(a / b)
+
+fn safe_divide_chain(a, b, c):
+    let x = divide(a, b)?
+    let y = divide(x, c)?
+    return Ok(y)
+
+print("  safe_divide_chain(20, 2, 5):", safe_divide_chain(20, 2, 5))
+print("  safe_divide_chain(20, 0, 5):", safe_divide_chain(20, 0, 5), "\n")
+
+# Feature 2: Multiple operations with ?
+print("✓ Multiple operations with ?")
+fn parse_int(s):
+    if s == "42":
+        return Ok(42)
+    if s == "100":
+        return Ok(100)
+    return Err("invalid number")
+
+fn validate_positive(n):
+    if n > 0:
+        return Ok(n)
+    return Err("not positive")
+
+fn process_number(s):
+    let num = parse_int(s)?
+    let validated = validate_positive(num)?
+    return Ok(validated * 2)
+
+print("  process_number('42'):", process_number("42"))
+print("  process_number('invalid'):", process_number("invalid"), "\n")
+
+# Feature 3: Chaining with method calls
+print("✓ Chaining with method calls")
+fn get_value():
+    return Ok(10)
+
+fn transform_result():
+    let result = get_value()?  # Unwraps to 10
+    return Ok(result * 2)
+
+print("  transform_result():", transform_result(), "\n")
+
+# Feature 4: Real-world file reading simulation
+print("✓ Real-world usage pattern")
+fn read_file(path):
+    if path == "config.txt":
+        return Ok("key=value")
+    return Err("file not found")
+
+fn parse_config(content):
+    if content == "key=value":
+        return Ok("parsed_config")
+    return Err("invalid format")
+
+fn load_config(path):
+    let content = read_file(path)?
+    let config = parse_config(content)?
+    return Ok(config)
+
+print("  load_config('config.txt'):", load_config("config.txt"))
+print("  load_config('missing.txt'):", load_config("missing.txt"), "\n")
+
+# Feature 5: Nested function calls with ?
+print("✓ Nested function calls with ?")
+fn step1():
+    return Ok(5)
+
+fn step2(x):
+    if x > 0:
+        return Ok(x * 2)
+    return Err("invalid input")
+
+fn step3(x):
+    if x < 100:
+        return Ok(x + 10)
+    return Err("too large")
+
+fn pipeline():
+    let a = step1()?
+    let b = step2(a)?
+    let c = step3(b)?
+    return Ok(c)
+
+print("  pipeline():", pipeline(), "\n")
+
+# Feature 6: Error propagation stops at first error
+print("✓ Error propagation stops at first error")
+fn always_ok():
+    return Ok(1)
+
+fn always_err():
+    return Err("always fails")
+
+fn multi_step():
+    let a = always_ok()?
+    let b = always_err()?  # This will propagate the error
+    let c = always_ok()?   # This never executes
+    return Ok(a + b + c)
+
+print("  multi_step():", multi_step())
+print("  (Note: Third step never executed)\n")
+
+# Feature 7: Combining ? with pattern matching
+print("✓ Combining ? with pattern matching")
+fn authenticate(user, pass):
+    if user == "admin":
+        if pass == "secret":
+            return Ok("token_123")
+    return Err("auth failed")
+
+fn get_user_data(token):
+    if token == "token_123":
+        return Ok("user_data")
+    return Err("invalid token")
+
+fn login_and_fetch(user, pass):
+    let token = authenticate(user, pass)?
+    let data = get_user_data(token)?
+    return Ok(data)
+
+let auth_result = login_and_fetch("admin", "secret")
+match auth_result:
+    Ok(data) => print("  Authenticated, data:", data)
+    Err(error) => print("  Failed:", error)
+
+let auth_fail = login_and_fetch("admin", "wrong")
+match auth_fail:
+    Ok(data) => print("  Authenticated, data:", data)
+    Err(error) => print("  Failed:", error)
+
+print("\n╔════════════════════════════════════════════════════════╗")
+print("║  ? operator working perfectly!                         ║")
+print("╚════════════════════════════════════════════════════════╝")

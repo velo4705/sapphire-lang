@@ -1,0 +1,69 @@
+# Multiple Patterns Per Arm Test
+# Tests the | operator for combining patterns
+
+fn classify_number(n):
+    return match n:
+        0 | 1 | 2 => "low"
+        3 | 4 | 5 => "mid"
+        6 | 7 | 8 => "high"
+        _ => "very high"
+
+# Test basic multiple patterns
+print("Testing multiple patterns per arm:")
+print(classify_number(0))   # low
+print(classify_number(1))   # low
+print(classify_number(2))   # low
+print(classify_number(3))   # mid
+print(classify_number(4))   # mid
+print(classify_number(5))   # mid
+print(classify_number(6))   # high
+print(classify_number(7))   # high
+print(classify_number(8))   # high
+print(classify_number(9))   # very high
+print(classify_number(100)) # very high
+
+# Test with strings
+fn classify_grade(grade):
+    return match grade:
+        "A" | "A+" | "A-" => "excellent"
+        "B" | "B+" | "B-" => "good"
+        "C" | "C+" | "C-" => "average"
+        "D" | "F" => "poor"
+        _ => "unknown"
+
+print("\nTesting with strings:")
+print(classify_grade("A"))   # excellent
+print(classify_grade("A+"))  # excellent
+print(classify_grade("B"))   # good
+print(classify_grade("C-"))  # average
+print(classify_grade("D"))   # poor
+print(classify_grade("F"))   # poor
+print(classify_grade("X"))   # unknown
+
+# Test with booleans
+fn describe_bool(b):
+    return match b:
+        true | 1 => "truthy"
+        false | 0 => "falsy"
+        _ => "other"
+
+print("\nTesting with booleans:")
+print(describe_bool(true))   # truthy
+print(describe_bool(false))  # falsy
+
+# Test with variable patterns
+fn check_value(v):
+    return match v:
+        0 | 1 => "zero or one"
+        x if x < 0 => "negative"
+        x if x > 10 => "large"
+        x => "normal"
+
+print("\nTesting with variable patterns and guards:")
+print(check_value(0))    # zero or one
+print(check_value(1))    # zero or one
+print(check_value(-5))   # negative
+print(check_value(15))   # large
+print(check_value(5))    # normal
+
+print("\n✓ All multiple pattern tests passed!")

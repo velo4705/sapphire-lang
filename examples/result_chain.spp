@@ -1,0 +1,17 @@
+# Test Result chaining
+
+fn divide(a, b):
+    if b == 0:
+        return Err("division by zero")
+    return Ok(a / b)
+
+fn validate_positive(x):
+    if x <= 0:
+        return Err("not positive")
+    return Ok(x)
+
+print("Test 1: Ok(10).and_then(validate_positive)")
+let r1 = Ok(10)
+print("  r1:", r1)
+let r2 = r1.and_then(validate_positive)
+print("  r2:", r2)

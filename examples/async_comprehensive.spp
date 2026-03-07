@@ -1,0 +1,60 @@
+# Comprehensive Async/Await Test
+
+print("=== Basic Async Functions ===")
+
+async fn greet(name) -> str:
+    return "Hello, " + name
+
+async fn get_number() -> int:
+    return 42
+
+print("Calling async functions...")
+let greeting = await greet("World")
+let number = await get_number()
+print(greeting)
+print("The answer is:", number)
+
+print("\n=== Async with Computation ===")
+
+async fn compute_sum(a, b) -> int:
+    return a + b
+
+async fn compute_product(a, b) -> int:
+    return a * b
+
+let sum = await compute_sum(10, 20)
+let product = await compute_product(5, 6)
+print("Sum:", sum)
+print("Product:", product)
+
+print("\n=== Nested Async Calls ===")
+
+async fn fetch_user_id() -> int:
+    return 123
+
+async fn fetch_user_name(id) -> str:
+    return "User_123"
+
+async fn get_user_info():
+    let id = await fetch_user_id()
+    let name = await fetch_user_name(id)
+    return name
+
+let user_info = await get_user_info()
+print("User info:", user_info)
+
+print("\n=== Async with Pattern Matching ===")
+
+async fn classify_async(n) -> str:
+    return match n:
+        0 => "zero"
+        x if x < 0 => "negative"
+        x if x > 0 => "positive"
+        _ => "unknown"
+
+let result1 = await classify_async(0)
+let result2 = await classify_async(-5)
+let result3 = await classify_async(10)
+print("Classifications:", result1, result2, result3)
+
+print("\n✓ Async/Await Phase 2 Working!")

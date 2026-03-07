@@ -113,6 +113,8 @@ llvm::Value* LLVMCodeGen::generateExpr(Expr* expr) {
         return generateVariableExpr(variable);
     } else if (auto* call = dynamic_cast<CallExpr*>(expr)) {
         return generateCallExpr(call);
+    } else if (auto* match = dynamic_cast<MatchExpr*>(expr)) {
+        return generateMatchExpr(match);
     }
     
     throw std::runtime_error("Unknown expression type");
@@ -420,6 +422,116 @@ llvm::Value* LLVMCodeGen::generatePrintCall(CallExpr* expr) {
     }
 }
 
+// Match expression generation
+llvm::Value* LLVMCodeGen::generateMatchExpr(MatchExpr* expr) {
+    auto* impl = static_cast<LLVMCodeGenImpl*>(impl_);
+    
+    // Evaluate the scrutinee (value being matched)
+    llvm::Value* scrutinee = generateExpr(expr->scrutinee.get());
+    
+    // Create basic blocks for each arm and a merge block
+    llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(*impl->context, "match_merge", impl->current_function);
+    
+    // We'll use a PHI node to collect results from different arms
+    // For now, assume all arms return the same type (we'll use the first arm's type)
+    llvm::Type* result_type = nullptr;
+    std::vector<std::pair<llvm::Value*, llvm::BasicBlock*>> phi_incoming;
+    
+    llvm::BasicBlock* next_arm_bb = nullptr;
+    
+    // Generate code for each arm
+    for (size_t i = 0; i < expr->arms.size(); i++) {
+        auto& arm = expr->arms[i];
+        
+        // Create basic blocks for this arm
+        llvm::BasicBlock* arm_check_bb = llvm::BasicBlock::Create(*impl->context, "match_arm_" + std::to_string(i), impl->current_function);
+        llvm::BasicBlock* arm_body_bb = llvm::BasicBlock::Create(*impl->context, "match_body_" + std::to_string(i), impl->current_function);
+        
+        // If this is not the first arm, branch from previous arm's check
+        if (i == 0) {
+            impl->builder->CreateBr(arm_check_bb);
+        } else {
+            // Previous arm didn't match, try this one
+            impl->builder->SetInsertPoint(next_arm_bb);
+            impl->builder->CreateBr(arm_check_bb);
+        }
+        
+        // Generate pattern matching code
+        impl->builder->SetInsertPoint(arm_check_bb);
+        
+        // Try each pattern in the arm (patterns are OR'd together)
+        // For now, only support the first pattern (full multi-pattern support requires more work)
+        auto& first_pattern = arm.patterns[0];
+        
+        bool matches = false;
+        if (first_pattern->type == Pattern::Type::WILDCARD) {
+            // Wildcard always matches
+            matches = true;
+            impl->builder->CreateBr(arm_body_bb);
+        } else if (first_pattern->type == Pattern::Type::LITERAL) {
+            // Compare scrutinee with literal
+            auto* lit_pattern = static_cast<LiteralPattern*>(first_pattern.get());
+            llvm::Value* pattern_val = generateExpr(lit_pattern->value.get());
+            
+            // Create comparison
+            llvm::Value* cmp = nullptr;
+            if (scrutinee->getType()->isIntegerTy() && pattern_val->getType()->isIntegerTy()) {
+                cmp = impl->builder->CreateICmpEQ(scrutinee, pattern_val, "match_cmp");
+            } else if (scrutinee->getType()->isDoubleTy() && pattern_val->getType()->isDoubleTy()) {
+                cmp = impl->builder->CreateFCmpOEQ(scrutinee, pattern_val, "match_cmp");
+            } else {
+                throw std::runtime_error("Type mismatch in pattern matching");
+            }
+            
+            // Create next arm block for when this doesn't match
+            next_arm_bb = llvm::BasicBlock::Create(*impl->context, "match_next_" + std::to_string(i), impl->current_function);
+            
+            // Branch based on comparison
+            impl->builder->CreateCondBr(cmp, arm_body_bb, next_arm_bb);
+        } else {
+            // Other pattern types not yet supported
+            throw std::runtime_error("Pattern type not yet supported in LLVM codegen");
+        }
+        
+        // Generate arm body
+        impl->builder->SetInsertPoint(arm_body_bb);
+        llvm::Value* arm_result = generateExpr(arm.body.get());
+        
+        if (!result_type) {
+            result_type = arm_result->getType();
+        }
+        
+        // Store result and branch to merge
+        phi_incoming.push_back({arm_result, impl->builder->GetInsertBlock()});
+        impl->builder->CreateBr(merge_bb);
+        
+        // If this was a wildcard (catch-all), we're done
+        if (matches) {
+            break;
+        }
+    }
+    
+    // If we have a next_arm_bb that wasn't used, it means no pattern matched
+    // This should not happen if patterns are exhaustive, but handle it
+    if (next_arm_bb && !next_arm_bb->getParent()) {
+        impl->builder->SetInsertPoint(next_arm_bb);
+        // No match - this is an error, but for now just return a default value
+        llvm::Value* default_val = llvm::Constant::getNullValue(result_type ? result_type : impl->getIntType());
+        phi_incoming.push_back({default_val, next_arm_bb});
+        impl->builder->CreateBr(merge_bb);
+    }
+    
+    // Create PHI node in merge block
+    impl->builder->SetInsertPoint(merge_bb);
+    llvm::PHINode* phi = impl->builder->CreatePHI(result_type ? result_type : impl->getIntType(), phi_incoming.size(), "match_result");
+    
+    for (auto& [value, block] : phi_incoming) {
+        phi->addIncoming(value, block);
+    }
+    
+    return phi;
+}
+
 // Statement generation
 void LLVMCodeGen::generateStmt(Stmt* stmt) {
     if (auto* expr_stmt = dynamic_cast<ExprStmt*>(stmt)) {
@@ -556,7 +668,7 @@ void LLVMCodeGen::generateFunctionDecl(FunctionDecl* stmt) {
     
     // Determine return type
     llvm::Type* return_type;
-    if (stmt->return_type.empty() || stmt->return_type == "none") {
+    if (stmt->return_type == "none") {
         return_type = llvm::Type::getVoidTy(*impl->context);
     } else if (stmt->return_type == "int") {
         return_type = impl->getIntType();
@@ -565,7 +677,9 @@ void LLVMCodeGen::generateFunctionDecl(FunctionDecl* stmt) {
     } else if (stmt->return_type == "bool") {
         return_type = impl->getBoolType();
     } else {
-        return_type = impl->getIntType(); // Default to int
+        // Default to int64 for functions without type annotations
+        // This is a simplification - proper implementation would use type inference
+        return_type = impl->getIntType();
     }
     
     // Create function type

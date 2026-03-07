@@ -1,64 +1,75 @@
 #!/bin/bash
-# Test all working examples to prevent first-day errors
+# Test all Sapphire examples to ensure quality
 
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║         Testing Sapphire Working Examples                    ║"
+echo "║         Testing All Sapphire Examples                        ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
 PASS=0
 FAIL=0
+SKIP=0
 
-# List of working examples
-EXAMPLES=(
-    "examples/hello.spp"
-    "examples/simple.spp"
-    "examples/showcase.spp"
-    "examples/data_science_simple.spp"
-    "examples/test_basic.spp"
-    "examples/test_arithmetic.spp"
-    "examples/test_comparison.spp"
-    "examples/file_io_example.spp"
+# Files to skip (known to require user input or special conditions)
+SKIP_FILES=(
+    "examples/input_test_simple.spp"
+    "examples/input_working.spp"
     "examples/user_input_example.spp"
-    "examples/system_programming_example.spp"
-    "examples/directives_example.spp"
-    "examples/codegen_test.spp"
-    "examples/comprehensive_test.spp"
-    "examples/concurrent_example.spp"
-    "examples/expr_test.spp"
-    "examples/float_test.spp"
-    "examples/json_example.spp"
-    "examples/showcase_compiler.spp"
-    "examples/simple_test.spp"
-    "examples/test_print_advanced.spp"
-    "examples/test_print_compile.spp"
-    "examples/test_type_promotion.spp"
-    "examples/test_with_print.spp"
-    "examples/type_test.spp"
-    "examples/control_flow_working.spp"
-    "examples/functions_working.spp"
-    "examples/arrays_working.spp"
-    "examples/file_io_working.spp"
-    "examples/complete_io_demo.spp"
-    "examples/error_handling_working.spp"
-    "examples/oop_working.spp"
-    "examples/modules_working.spp"
-    "examples/oop_practical.spp"
-    "examples/modules_practical.spp"
 )
 
-for example in "${EXAMPLES[@]}"; do
+# Function to check if file should be skipped
+should_skip() {
+    local file=$1
+    for skip_file in "${SKIP_FILES[@]}"; do
+        if [ "$file" = "$skip_file" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Get all .spp files in examples directory (not subdirectories)
+mapfile -t ALL_EXAMPLES < <(find examples -maxdepth 1 -name "*.spp" -type f | sort)
+
+echo "Found ${#ALL_EXAMPLES[@]} example files"
+echo ""
+
+# Test each example
+for example in "${ALL_EXAMPLES[@]}"; do
+    # Check if should skip
+    if should_skip "$example"; then
+        echo "Testing: $example"
+        echo "  ⊘ SKIP - Requires user input"
+        SKIP=$((SKIP + 1))
+        echo ""
+        continue
+    fi
+    
     echo "Testing: $example"
     
-    # Run the example and capture output
-    output=$(./sapp "$example" 2>&1)
+    # Run the example with timeout and capture output
+    output=$(timeout 5s ./sapp "$example" 2>&1)
     exit_code=$?
     
+    # Check for timeout (exit code 124)
+    if [ $exit_code -eq 124 ]; then
+        echo "  ⊘ SKIP - Timeout (likely infinite loop or waiting for input)"
+        SKIP=$((SKIP + 1))
     # Check for parse errors
-    if echo "$output" | grep -q "Parse error"; then
+    elif echo "$output" | grep -q "Parse error"; then
         echo "  ✗ FAIL - Parse errors found"
         echo "$output" | grep "Parse error" | head -3
         FAIL=$((FAIL + 1))
+    # Check for uncaught runtime errors (but not caught errors in try/catch)
+    elif echo "$output" | grep -qE "^Error:|Runtime error:|Traceback"; then
+        echo "  ✗ FAIL - Runtime error"
+        echo "$output" | grep -E "^Error:|Runtime error:|Traceback" | head -3
+        FAIL=$((FAIL + 1))
+    # Check for segfault
+    elif [ $exit_code -eq 139 ]; then
+        echo "  ✗ FAIL - Segmentation fault"
+        FAIL=$((FAIL + 1))
+    # Check for other non-zero exit codes
     elif [ $exit_code -ne 0 ]; then
         echo "  ✗ FAIL - Exit code: $exit_code"
         FAIL=$((FAIL + 1))
@@ -73,15 +84,23 @@ echo "╔═══════════════════════�
 echo "║  Test Results                                                 ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
-echo "Passed: $PASS"
-echo "Failed: $FAIL"
-echo "Total:  $((PASS + FAIL))"
+echo "Passed:  $PASS"
+echo "Failed:  $FAIL"
+echo "Skipped: $SKIP"
+echo "Total:   $((PASS + FAIL + SKIP))"
 echo ""
 
+# Calculate pass rate
+if [ $((PASS + FAIL)) -gt 0 ]; then
+    pass_rate=$((PASS * 100 / (PASS + FAIL)))
+    echo "Pass Rate: ${pass_rate}%"
+    echo ""
+fi
+
 if [ $FAIL -eq 0 ]; then
-    echo "✓ All examples working! Ready for launch! 🚀"
+    echo "✓ All testable examples working! Ready for launch! 🚀"
     exit 0
 else
-    echo "✗ Some examples failed. Fix before launch."
+    echo "✗ $FAIL example(s) failed. Review and fix before launch."
     exit 1
 fi

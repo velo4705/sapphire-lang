@@ -1,0 +1,38 @@
+# Simple test of the ? operator for error propagation
+
+print("Testing ? operator for error propagation\n")
+
+# Helper function that returns Result
+fn divide(a, b):
+    if b == 0:
+        return Err("division by zero")
+    return Ok(a / b)
+
+# Function that uses ? operator to propagate errors
+fn calculate(a, b, c):
+    let x = divide(a, b)?  # If Err, return early
+    let y = divide(x, c)?  # If Err, return early
+    return Ok(y)
+
+# Test 1: Success case
+print("Test 1: calculate(20, 2, 5)")
+let result1 = calculate(20, 2, 5)
+match result1:
+    Ok(value) => print("  Success:", value)
+    Err(error) => print("  Error:", error)
+
+# Test 2: First division fails
+print("\nTest 2: calculate(20, 0, 5)")
+let result2 = calculate(20, 0, 5)
+match result2:
+    Ok(value) => print("  Success:", value)
+    Err(error) => print("  Error:", error)
+
+# Test 3: Second division fails
+print("\nTest 3: calculate(20, 2, 0)")
+let result3 = calculate(20, 2, 0)
+match result3:
+    Ok(value) => print("  Success:", value)
+    Err(error) => print("  Error:", error)
+
+print("\n✓ All tests passed!")

@@ -30,6 +30,7 @@ SOURCES = $(SRCDIR)/main.cpp \
           $(SRCDIR)/parser/expr.cpp \
           $(SRCDIR)/parser/stmt.cpp \
           $(SRCDIR)/interpreter/interpreter.cpp \
+          $(SRCDIR)/repl/repl.cpp \
           $(SRCDIR)/types/type.cpp \
           $(SRCDIR)/semantic/type_checker.cpp \
           $(SRCDIR)/semantic/type_inference.cpp
@@ -218,14 +219,6 @@ spm:
 	@mkdir -p build/spm
 	$(CXX) -std=c++20 -Wall -Wextra -O2 \
 		tools/spm/main.cpp \
-		tools/spm/commands/init.cpp \
-		tools/spm/commands/build.cpp \
-		tools/spm/commands/run.cpp \
-		tools/spm/commands/test.cpp \
-		tools/spm/commands/clean.cpp \
-		tools/spm/commands/doc.cpp \
-		tools/spm/commands/fmt.cpp \
-		tools/spm/utils/fs.cpp \
 		-o spm
 	@echo "✓ Build complete: ./spm"
 
@@ -237,7 +230,27 @@ sapphire-fmt:
 		-o sapphire-fmt
 	@echo "✓ Build complete: ./sapphire-fmt"
 
-tools: spm sapphire-fmt
+sapphire-lsp:
+	@echo "Building sapphire-lsp (Language Server)..."
+	$(CXX) -std=c++20 -Wall -Wextra -O2 -I./src \
+		tools/lsp/main.cpp \
+		src/lexer/lexer.cpp \
+		src/lexer/token.cpp \
+		src/parser/parser.cpp \
+		src/parser/expr.cpp \
+		src/parser/stmt.cpp \
+		src/types/type.cpp \
+		-o sapphire-lsp
+	@echo "✓ Build complete: ./sapphire-lsp"
+
+sapphire-debug:
+	@echo "Building sapphire-debug (Debug Adapter)..."
+	$(CXX) -std=c++20 -Wall -Wextra -O2 \
+		tools/debug/main.cpp \
+		-o sapphire-debug
+	@echo "✓ Build complete: ./sapphire-debug"
+
+tools: spm sapphire-fmt sapphire-lsp sapphire-debug
 	@echo "✓ All tools built successfully!"
 
 quick: $(TARGET)

@@ -44,6 +44,17 @@ enum class TokenType {
     CATCH,
     FINALLY,
     THROW,
+    TRAIT,
+    IMPL,
+    SELF,
+    WHERE,
+    DYN,
+    CHAN,
+    GO,
+    SELECT,
+    CASE,
+    DEFAULT,
+    MACRO,
     
     // Operators
     PLUS,
@@ -61,6 +72,9 @@ enum class TokenType {
     GREATER_EQUAL,
     PLUS_EQUAL,
     MINUS_EQUAL,
+    PIPE,  // | for multiple patterns
+    DOUBLE_DOT,  // .. for ranges
+    TRIPLE_DOT,  // ... for rest patterns
     
     // Delimiters
     LPAREN,
@@ -73,7 +87,9 @@ enum class TokenType {
     COMMA,
     DOT,
     ARROW,
+    CHANNEL_SEND,  // <- for channel send
     QUESTION,
+    AT,  // @ for decorators
     
     // Special
     NEWLINE,

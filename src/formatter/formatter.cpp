@@ -3,6 +3,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cctype>
+#include <vector>
 
 namespace sapphire {
 
@@ -35,32 +36,54 @@ void Formatter::decrease_indent() {
 
 std::string Formatter::format(const std::string& code) {
     result_.clear();
-    current_indent_ = 0;
     
+    // First pass: parse into lines and determine indentation
     std::istringstream stream(code);
     std::string line;
-    bool in_string = false;
+    std::vector<std::pair<std::string, int>> lines_with_indent;
+    int indent_level = 0;
     
     while (std::getline(stream, line)) {
         // Trim whitespace
         size_t start = line.find_first_not_of(" \t");
         if (start == std::string::npos) {
             // Empty line
-            result_ += '\n';
+            lines_with_indent.push_back({"", indent_level});
             continue;
         }
         
-        line = line.substr(start);
+        std::string trimmed = line.substr(start);
+        
+        // Dedent before top-level keywords
+        if (trimmed.find("fn ") == 0 || trimmed.find("class ") == 0) {
+            indent_level = 0;
+        }
+        
+        // Store line with current indent
+        lines_with_indent.push_back({trimmed, indent_level});
+        
+        // Increase indent after lines ending with ':'
+        if (!trimmed.empty() && trimmed.back() == ':') {
+            indent_level++;
+        }
+    }
+    
+    // Second pass: format each line
+    current_indent_ = 0;
+    bool in_string = false;
+    
+    for (const auto& [line, indent] : lines_with_indent) {
+        current_indent_ = indent;
+        
+        if (line.empty()) {
+            result_ += '\n';
+            continue;
+        }
         
         // Handle comments
         if (line[0] == '#') {
             add_line(line);
             continue;
-        }
-        
-        // Handle closing braces
-        if (line[0] == '}') {
-            decrease_indent();
         }
         
         // Format the line
@@ -82,6 +105,19 @@ std::string Formatter::format(const std::string& code) {
             
             // Add spaces around operators
             if (options_.space_around_operators) {
+                // Check for -> operator (don't split it)
+                if (c == '-' && i + 1 < line.length() && line[i+1] == '>') {
+                    if (!formatted.empty() && formatted.back() != ' ') {
+                        formatted += ' ';
+                    }
+                    formatted += "->";
+                    i++; // Skip the '>'
+                    if (i + 1 < line.length() && line[i+1] != ' ' && line[i+1] != ':') {
+                        formatted += ' ';
+                    }
+                    continue;
+                }
+                
                 if (c == '=' || c == '+' || c == '-' || c == '*' || c == '/' ||
                     c == '<' || c == '>' || c == '!') {
                     if (!formatted.empty() && formatted.back() != ' ') {
@@ -101,24 +137,6 @@ std::string Formatter::format(const std::string& code) {
                 if (i + 1 < line.length() && line[i+1] != ' ') {
                     formatted += ' ';
                 }
-                continue;
-            }
-            
-            // Handle braces
-            if (c == '{') {
-                if (options_.newline_before_brace) {
-                    add_line(formatted);
-                    formatted.clear();
-                    add_line("{");
-                } else {
-                    if (!formatted.empty() && formatted.back() != ' ') {
-                        formatted += ' ';
-                    }
-                    formatted += c;
-                    add_line(formatted);
-                    formatted.clear();
-                }
-                increase_indent();
                 continue;
             }
             

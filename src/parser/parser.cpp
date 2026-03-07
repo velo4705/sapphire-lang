@@ -87,6 +87,7 @@ void Parser::synchronize() {
         
         switch (peek().type) {
             case TokenType::FN:
+            case TokenType::MACRO:
             case TokenType::LET:
             case TokenType::CONST:
             case TokenType::FOR:
@@ -105,18 +106,50 @@ void Parser::synchronize() {
 // Statement parsing
 
 std::unique_ptr<Stmt> Parser::declaration() {
+    // Parse decorators first
+    std::vector<Decorator> decorators = parseDecorators();
+    
     if (match({TokenType::LET, TokenType::CONST})) {
+        if (!decorators.empty()) {
+            throw error(previous(), "Decorators cannot be applied to variable declarations");
+        }
         return varDeclaration();
     }
     if (match({TokenType::FN, TokenType::ASYNC})) {
-        return functionDeclaration();
+        return functionDeclaration(std::move(decorators));
+    }
+    if (match({TokenType::MACRO})) {
+        if (!decorators.empty()) {
+            throw error(previous(), "Decorators cannot be applied to macro declarations");
+        }
+        return macroDeclaration();
     }
     if (match({TokenType::CLASS})) {
-        return classDeclaration();
+        return classDeclaration(std::move(decorators));
+    }
+    if (match({TokenType::TRAIT})) {
+        if (!decorators.empty()) {
+            throw error(previous(), "Decorators cannot be applied to trait declarations");
+        }
+        return traitDeclaration();
+    }
+    if (match({TokenType::IMPL})) {
+        if (!decorators.empty()) {
+            throw error(previous(), "Decorators cannot be applied to impl blocks");
+        }
+        return implBlock();
     }
     if (match({TokenType::IMPORT, TokenType::FROM})) {
+        if (!decorators.empty()) {
+            throw error(previous(), "Decorators cannot be applied to import statements");
+        }
         return importDeclaration();
     }
+    
+    if (!decorators.empty()) {
+        throw error(peek(), "Decorators can only be applied to functions and classes");
+    }
+    
     return statement();
 }
 
@@ -142,7 +175,7 @@ std::unique_ptr<Stmt> Parser::varDeclaration() {
                                          std::move(initializer), is_const);
 }
 
-std::unique_ptr<Stmt> Parser::functionDeclaration() {
+std::unique_ptr<Stmt> Parser::functionDeclaration(std::vector<Decorator> decorators) {
     bool is_async = previous().type == TokenType::ASYNC;
     if (is_async) {
         consume(TokenType::FN, "Expected 'fn' after 'async'");
@@ -181,11 +214,35 @@ std::unique_ptr<Stmt> Parser::functionDeclaration() {
     
     auto body = block();
     
-    return std::make_unique<FunctionDecl>(name.lexeme, std::move(parameters),
+    return std::make_unique<FunctionDecl>(std::move(decorators), name.lexeme, std::move(parameters),
                                           return_type, std::move(body), is_async);
 }
 
-std::unique_ptr<Stmt> Parser::classDeclaration() {
+std::unique_ptr<Stmt> Parser::macroDeclaration() {
+    // macro name(params):
+    Token name = consumeToken(TokenType::IDENTIFIER, "Expected macro name");
+    
+    consume(TokenType::LPAREN, "Expected '(' after macro name");
+    
+    std::vector<std::string> parameters;
+    if (!check(TokenType::RPAREN)) {
+        do {
+            Token param_name = consumeToken(TokenType::IDENTIFIER, "Expected parameter name");
+            parameters.push_back(param_name.lexeme);
+        } while (match({TokenType::COMMA}));
+    }
+    
+    consume(TokenType::RPAREN, "Expected ')' after parameters");
+    consume(TokenType::COLON, "Expected ':' before macro body");
+    skipNewlines();
+    consume(TokenType::INDENT, "Expected indented block");
+    
+    auto body = block();
+    
+    return std::make_unique<MacroDecl>(name.lexeme, std::move(parameters), std::move(body));
+}
+
+std::unique_ptr<Stmt> Parser::classDeclaration(std::vector<Decorator> decorators) {
     // class Name[:]
     Token name = consumeToken(TokenType::IDENTIFIER, "Expected class name");
     
@@ -214,7 +271,7 @@ std::unique_ptr<Stmt> Parser::classDeclaration() {
         // Non-function statements in class body are ignored for now
     }
     
-    return std::make_unique<ClassDecl>(name.lexeme, superclass_name, std::move(methods));
+    return std::make_unique<ClassDecl>(std::move(decorators), name.lexeme, superclass_name, std::move(methods));
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
@@ -224,12 +281,22 @@ std::unique_ptr<Stmt> Parser::statement() {
     if (match({TokenType::FOR})) return forStatement();
     if (match({TokenType::TRY})) return tryStatement();
     if (match({TokenType::THROW})) return throwStatement();
+    if (match({TokenType::SELECT})) return selectStatement();
+    if (match({TokenType::GO})) return goStatement();
     
     return exprStatement();
 }
 
 std::unique_ptr<Stmt> Parser::exprStatement() {
     auto expr = expression();
+    
+    // Check for channel send: ch <- value
+    if (match({TokenType::CHANNEL_SEND})) {
+        auto value = expression();
+        skipNewlines();
+        return std::make_unique<ChannelSendStmt>(std::move(expr), std::move(value));
+    }
+    
     skipNewlines();
     return std::make_unique<ExprStmt>(std::move(expr));
 }
@@ -406,6 +473,12 @@ std::unique_ptr<Expr> Parser::factor() {
 }
 
 std::unique_ptr<Expr> Parser::unary() {
+    // Channel receive: <-ch
+    if (match({TokenType::CHANNEL_SEND})) {
+        auto channel = unary();
+        return std::make_unique<ChannelReceiveExpr>(std::move(channel));
+    }
+    
     if (match({TokenType::NOT, TokenType::MINUS})) {
         std::string op = previous().lexeme;
         auto right = unary();
@@ -448,6 +521,9 @@ std::unique_ptr<Expr> Parser::call() {
         } else if (match({TokenType::DOT})) {
             Token name = consumeToken(TokenType::IDENTIFIER, "Expected property name after '.'");
             expr = std::make_unique<GetExpr>(std::move(expr), name.lexeme);
+        } else if (match({TokenType::QUESTION})) {
+            // ? operator for error propagation
+            expr = std::make_unique<TryExpr>(std::move(expr));
         } else {
             break;
         }
@@ -457,6 +533,34 @@ std::unique_ptr<Expr> Parser::call() {
 }
 
 std::unique_ptr<Expr> Parser::primary() {
+    // Await expression
+    if (match({TokenType::AWAIT})) {
+        auto future = unary();  // Parse the expression to await
+        return std::make_unique<AwaitExpr>(std::move(future));
+    }
+    
+    // Channel creation: chan<T>(capacity) or chan<T>()
+    if (match({TokenType::CHAN})) {
+        consume(TokenType::LESS, "Expected '<' after 'chan'");
+        Token type_token = consumeToken(TokenType::IDENTIFIER, "Expected type name");
+        std::string element_type = type_token.lexeme;
+        consume(TokenType::GREATER, "Expected '>' after type name");
+        consume(TokenType::LPAREN, "Expected '(' after channel type");
+        
+        std::unique_ptr<Expr> capacity = nullptr;
+        if (!check(TokenType::RPAREN)) {
+            capacity = expression();
+        }
+        
+        consume(TokenType::RPAREN, "Expected ')' after channel capacity");
+        return std::make_unique<ChannelExpr>(element_type, std::move(capacity));
+    }
+    
+    // Match expression
+    if (match({TokenType::MATCH})) {
+        return matchExpression();
+    }
+    
     if (match({TokenType::TRUE})) {
         return std::make_unique<LiteralExpr>(LiteralExpr::Type::BOOLEAN, "true");
     }
@@ -478,7 +582,17 @@ std::unique_ptr<Expr> Parser::primary() {
     }
     
     if (match({TokenType::IDENTIFIER})) {
-        return std::make_unique<VariableExpr>(previous().lexeme);
+        std::string name = previous().lexeme;
+        
+        // Check for stringify() macro function
+        if (name == "stringify" && check(TokenType::LPAREN)) {
+            advance();  // consume '('
+            auto expr = expression();
+            consume(TokenType::RPAREN, "Expected ')' after stringify argument");
+            return std::make_unique<StringifyExpr>(std::move(expr));
+        }
+        
+        return std::make_unique<VariableExpr>(name);
     }
     
     if (match({TokenType::LBRACKET})) {
@@ -603,6 +717,94 @@ std::unique_ptr<Stmt> Parser::throwStatement() {
     return std::make_unique<ThrowStmt>(exception_type, std::move(message));
 }
 
+std::unique_ptr<Stmt> Parser::selectStatement() {
+    // select:
+    //     case x = <-ch1:
+    //         body
+    //     case y = <-ch2:
+    //         body
+    //     default:
+    //         body
+    
+    consume(TokenType::COLON, "Expected ':' after 'select'");
+    skipNewlines();
+    consume(TokenType::INDENT, "Expected indentation after 'select:'");
+    
+    std::vector<SelectCase> cases;
+    std::vector<std::unique_ptr<Stmt>> default_case;
+    
+    while (!check(TokenType::DEDENT) && !isAtEnd()) {
+        if (match({TokenType::CASE})) {
+            // Parse: case var = <-ch:
+            std::string variable;
+            std::unique_ptr<Expr> channel;
+            
+            // Check if there's a variable binding
+            if (check(TokenType::IDENTIFIER)) {
+                Token var_token = advance();
+                variable = var_token.lexeme;
+                consume(TokenType::EQUAL, "Expected '=' after variable in select case");
+            }
+            
+            // Expect channel receive: <-ch
+            consume(TokenType::CHANNEL_SEND, "Expected '<-' in select case");
+            channel = primary();  // Parse the channel expression
+            
+            consume(TokenType::COLON, "Expected ':' after select case");
+            skipNewlines();
+            consume(TokenType::INDENT, "Expected indentation after case:");
+            
+            std::vector<std::unique_ptr<Stmt>> case_body;
+            while (!check(TokenType::DEDENT) && !isAtEnd()) {
+                case_body.push_back(declaration());
+                skipNewlines();
+            }
+            consume(TokenType::DEDENT, "Expected dedent after case body");
+            
+            cases.emplace_back(std::move(channel), variable, std::move(case_body));
+            
+        } else if (match({TokenType::DEFAULT})) {
+            // Parse: default:
+            consume(TokenType::COLON, "Expected ':' after 'default'");
+            skipNewlines();
+            consume(TokenType::INDENT, "Expected indentation after default:");
+            
+            while (!check(TokenType::DEDENT) && !isAtEnd()) {
+                default_case.push_back(declaration());
+                skipNewlines();
+            }
+            consume(TokenType::DEDENT, "Expected dedent after default body");
+            
+        } else {
+            throw error(peek(), "Expected 'case' or 'default' in select statement");
+        }
+        
+        skipNewlines();
+    }
+    
+    consume(TokenType::DEDENT, "Expected dedent after select block");
+    
+    return std::make_unique<SelectStmt>(std::move(cases), std::move(default_case));
+}
+
+std::unique_ptr<Stmt> Parser::goStatement() {
+    // go function_call()
+    // Parse the function call expression
+    auto expr = expression();
+    
+    // Ensure it's a call expression
+    CallExpr* call_expr = dynamic_cast<CallExpr*>(expr.get());
+    if (!call_expr) {
+        throw error(previous(), "Expected function call after 'go'");
+    }
+    
+    // Transfer ownership to GoStmt
+    std::unique_ptr<CallExpr> call(static_cast<CallExpr*>(expr.release()));
+    
+    skipNewlines();
+    return std::make_unique<GoStmt>(std::move(call));
+}
+
 std::unique_ptr<Stmt> Parser::importDeclaration() {
     // import module
     // import module as alias
@@ -653,6 +855,398 @@ std::unique_ptr<Stmt> Parser::importDeclaration() {
         skipNewlines();
         return std::unique_ptr<ImportStmt>(new ImportStmt(module_name, alias));
     }
+}
+
+// Pattern matching implementation
+
+std::unique_ptr<Expr> Parser::matchExpression() {
+    // match <scrutinee>:
+    auto scrutinee = expression();
+    
+    skipNewlines();
+    consume(TokenType::COLON, "Expected ':' after match scrutinee");
+    skipNewlines();
+    consume(TokenType::INDENT, "Expected indentation after match:");
+    
+    // Parse match arms
+    std::vector<MatchArm> arms;
+    
+    while (!check(TokenType::DEDENT) && !isAtEnd()) {
+        // Parse pattern(s) - support multiple patterns with |
+        std::vector<std::unique_ptr<Pattern>> patterns;
+        patterns.push_back(pattern());
+        
+        // Check for additional patterns separated by |
+        while (match({TokenType::PIPE})) {
+            patterns.push_back(pattern());
+        }
+        
+        // Optional guard: if <condition>
+        std::unique_ptr<Expr> guard = nullptr;
+        if (match({TokenType::IF})) {
+            guard = expression();
+        }
+        
+        // Expect =>
+        consume(TokenType::ARROW, "Expected '=>' after pattern");
+        
+        // Parse body expression
+        auto body = expression();
+        
+        // Create match arm with all patterns
+        arms.emplace_back(std::move(patterns), std::move(guard), std::move(body));
+        
+        skipNewlines();
+    }
+    
+    consume(TokenType::DEDENT, "Expected dedent after match arms");
+    
+    return std::make_unique<MatchExpr>(std::move(scrutinee), std::move(arms));
+}
+
+std::unique_ptr<Pattern> Parser::pattern() {
+    // Wildcard pattern: _
+    if (check(TokenType::IDENTIFIER) && peek().lexeme == "_") {
+        advance();  // consume the _
+        return std::make_unique<WildcardPattern>();
+    }
+    
+    // Array pattern: [...]
+    if (check(TokenType::LBRACKET)) {
+        return arrayPattern();
+    }
+    
+    // Object pattern: {...}
+    if (check(TokenType::LBRACE)) {
+        return objectPattern();
+    }
+    
+    // Literal pattern: 0, "hello", true, false, none
+    if (match({TokenType::INTEGER, TokenType::FLOAT, TokenType::STRING, 
+               TokenType::TRUE, TokenType::FALSE, TokenType::NONE})) {
+        Token lit = previous();
+        std::unique_ptr<Expr> value;
+        
+        switch (lit.type) {
+            case TokenType::INTEGER:
+                value = std::make_unique<LiteralExpr>(LiteralExpr::Type::INTEGER, lit.lexeme);
+                break;
+            case TokenType::FLOAT:
+                value = std::make_unique<LiteralExpr>(LiteralExpr::Type::FLOAT, lit.lexeme);
+                break;
+            case TokenType::STRING:
+                value = std::make_unique<LiteralExpr>(LiteralExpr::Type::STRING, lit.lexeme);
+                break;
+            case TokenType::TRUE:
+                value = std::make_unique<LiteralExpr>(LiteralExpr::Type::BOOLEAN, "true");
+                break;
+            case TokenType::FALSE:
+                value = std::make_unique<LiteralExpr>(LiteralExpr::Type::BOOLEAN, "false");
+                break;
+            case TokenType::NONE:
+                value = std::make_unique<LiteralExpr>(LiteralExpr::Type::NONE, "none");
+                break;
+            default:
+                break;
+        }
+        
+        return std::make_unique<LiteralPattern>(std::move(value));
+    }
+    
+    // Constructor pattern or Variable pattern: Some(x), None, Ok(x), Err(e), or just x
+    if (match({TokenType::IDENTIFIER})) {
+        std::string name = previous().lexeme;
+        
+        // Check if this is a constructor pattern (Some, None, Ok, Err)
+        if (name == "Some" || name == "None" || name == "Ok" || name == "Err") {
+            // Check for parentheses
+            if (check(TokenType::LPAREN)) {
+                advance();  // consume (
+                
+                if (name == "None") {
+                    // None() - no inner pattern
+                    consume(TokenType::RPAREN, "Expected ')' after None");
+                    return std::make_unique<ConstructorPattern>(name, nullptr);
+                } else {
+                    // Some(x), Ok(x), Err(e) - has inner pattern
+                    auto inner = pattern();
+                    consume(TokenType::RPAREN, "Expected ')' after pattern");
+                    return std::make_unique<ConstructorPattern>(name, std::move(inner));
+                }
+            } else if (name == "None") {
+                // None without parentheses
+                return std::make_unique<ConstructorPattern>(name, nullptr);
+            }
+        }
+        
+        // Regular variable pattern
+        return std::make_unique<VariablePattern>(name);
+    }
+    
+    throw error(peek(), "Expected pattern");
+}
+
+std::unique_ptr<Pattern> Parser::arrayPattern() {
+    consume(TokenType::LBRACKET, "Expected '['");
+    
+    std::vector<std::unique_ptr<Pattern>> elements;
+    bool has_rest = false;
+    std::string rest_name;
+    
+    if (!check(TokenType::RBRACKET)) {
+        do {
+            skipNewlines();
+            
+            // Check for rest pattern: ...rest
+            if (match({TokenType::TRIPLE_DOT})) {
+                has_rest = true;
+                Token rest_token = consumeToken(TokenType::IDENTIFIER, "Expected identifier after '...'");
+                rest_name = rest_token.lexeme;
+                break;  // Rest must be last
+            }
+            
+            elements.push_back(pattern());
+            skipNewlines();
+        } while (match({TokenType::COMMA}));
+    }
+    
+    consume(TokenType::RBRACKET, "Expected ']' after array pattern");
+    
+    return std::make_unique<ArrayPattern>(std::move(elements), has_rest, rest_name);
+}
+
+std::unique_ptr<Pattern> Parser::objectPattern() {
+    consume(TokenType::LBRACE, "Expected '{'");
+    
+    std::vector<std::pair<std::string, std::unique_ptr<Pattern>>> fields;
+    
+    if (!check(TokenType::RBRACE)) {
+        do {
+            skipNewlines();
+            
+            Token field_name = consumeToken(TokenType::IDENTIFIER, "Expected field name");
+            std::string name = field_name.lexeme;
+            
+            std::unique_ptr<Pattern> field_pattern;
+            
+            // Check for explicit pattern: {name: pattern}
+            if (match({TokenType::COLON})) {
+                field_pattern = pattern();
+            } else {
+                // Shorthand: {name} is equivalent to {name: name}
+                field_pattern = std::make_unique<VariablePattern>(name);
+            }
+            
+            fields.emplace_back(name, std::move(field_pattern));
+            skipNewlines();
+        } while (match({TokenType::COMMA}));
+    }
+    
+    consume(TokenType::RBRACE, "Expected '}' after object pattern");
+    
+    return std::make_unique<ObjectPattern>(std::move(fields));
+}
+
+// Trait declaration parsing
+
+std::unique_ptr<Stmt> Parser::traitDeclaration() {
+    // trait <name>:
+    Token name_token = consumeToken(TokenType::IDENTIFIER, "Expected trait name");
+    std::string name = name_token.lexeme;
+    
+    consume(TokenType::COLON, "Expected ':' after trait name");
+    
+    // Optional super traits on same line: trait Foo: Bar + Baz
+    std::vector<std::string> super_traits;
+    if (check(TokenType::IDENTIFIER)) {
+        do {
+            Token super_trait = consumeToken(TokenType::IDENTIFIER, "Expected trait name");
+            super_traits.push_back(super_trait.lexeme);
+        } while (match({TokenType::PLUS}));
+    }
+    
+    skipNewlines();
+    consume(TokenType::INDENT, "Expected indentation after trait:");
+    
+    // Parse trait methods (just signatures, no bodies)
+    std::vector<std::unique_ptr<FunctionDecl>> methods;
+    
+    while (!check(TokenType::DEDENT) && !isAtEnd()) {
+        if (check(TokenType::FN)) {
+            advance();  // Consume FN
+            
+            // Parse method signature
+            Token method_name = consumeToken(TokenType::IDENTIFIER, "Expected method name");
+            
+            consume(TokenType::LPAREN, "Expected '(' after method name");
+            
+            // Parse parameters
+            std::vector<std::pair<std::string, std::string>> parameters;
+            if (!check(TokenType::RPAREN)) {
+                do {
+                    Token param_name = consumeToken(TokenType::IDENTIFIER, "Expected parameter name");
+                    std::string param_type;
+                    
+                    if (match({TokenType::COLON})) {
+                        Token type_token = consumeToken(TokenType::IDENTIFIER, "Expected parameter type");
+                        param_type = type_token.lexeme;
+                    }
+                    
+                    parameters.emplace_back(param_name.lexeme, param_type);
+                } while (match({TokenType::COMMA}));
+            }
+            
+            consume(TokenType::RPAREN, "Expected ')' after parameters");
+            
+            // Optional return type
+            std::string return_type;
+            if (match({TokenType::ARROW})) {
+                Token ret_type = consumeToken(TokenType::IDENTIFIER, "Expected return type");
+                return_type = ret_type.lexeme;
+            }
+            
+            // Trait methods don't have bodies
+            skipNewlines();
+            
+            // Create function declaration with empty body
+            std::vector<std::unique_ptr<Stmt>> empty_body;
+            std::vector<Decorator> empty_decorators;
+            auto method = std::make_unique<FunctionDecl>(
+                std::move(empty_decorators),
+                method_name.lexeme,
+                parameters,
+                return_type,
+                std::move(empty_body)
+            );
+            
+            methods.push_back(std::move(method));
+        } else {
+            skipNewlines();
+            if (!check(TokenType::DEDENT) && !isAtEnd()) {
+                advance();  // Skip unexpected tokens
+            }
+        }
+    }
+    
+    consume(TokenType::DEDENT, "Expected dedent after trait body");
+    
+    return std::make_unique<TraitDecl>(name, super_traits, std::move(methods));
+}
+
+// Impl block parsing
+
+std::unique_ptr<Stmt> Parser::implBlock() {
+    // impl <TraitName> for <TypeName>:
+    // OR
+    // Inside a class: impl <TraitName>:
+    
+    Token trait_token = consumeToken(TokenType::IDENTIFIER, "Expected trait name after 'impl'");
+    std::string trait_name = trait_token.lexeme;
+    
+    std::string for_type_name;
+    
+    // Check for standalone impl block: impl Trait for Type
+    if (match({TokenType::FOR})) {
+        Token type_token = consumeToken(TokenType::IDENTIFIER, "Expected type name after 'for'");
+        for_type_name = type_token.lexeme;
+    }
+    // Otherwise it's inside a class, type will be determined by context
+    
+    consume(TokenType::COLON, "Expected ':' after impl declaration");
+    skipNewlines();
+    consume(TokenType::INDENT, "Expected indentation after impl:");
+    
+    // Parse method implementations
+    std::vector<std::unique_ptr<FunctionDecl>> methods;
+    
+    while (!check(TokenType::DEDENT) && !isAtEnd()) {
+        if (check(TokenType::FN)) {
+            advance();  // Consume FN
+            
+            // Parse full method implementation
+            Token method_name = consumeToken(TokenType::IDENTIFIER, "Expected method name");
+            
+            consume(TokenType::LPAREN, "Expected '(' after method name");
+            
+            // Parse parameters
+            std::vector<std::pair<std::string, std::string>> parameters;
+            if (!check(TokenType::RPAREN)) {
+                do {
+                    Token param_name = consumeToken(TokenType::IDENTIFIER, "Expected parameter name");
+                    std::string param_type;
+                    
+                    if (match({TokenType::COLON})) {
+                        Token type_token = consumeToken(TokenType::IDENTIFIER, "Expected parameter type");
+                        param_type = type_token.lexeme;
+                    }
+                    
+                    parameters.emplace_back(param_name.lexeme, param_type);
+                } while (match({TokenType::COMMA}));
+            }
+            
+            consume(TokenType::RPAREN, "Expected ')' after parameters");
+            
+            // Optional return type
+            std::string return_type;
+            if (match({TokenType::ARROW})) {
+                Token ret_type = consumeToken(TokenType::IDENTIFIER, "Expected return type");
+                return_type = ret_type.lexeme;
+            }
+            
+            // Parse method body
+            consume(TokenType::COLON, "Expected ':' before method body");
+            skipNewlines();
+            consume(TokenType::INDENT, "Expected indentation for method body");
+            
+            std::vector<std::unique_ptr<Stmt>> body = block();
+            std::vector<Decorator> empty_decorators;
+            
+            auto method = std::make_unique<FunctionDecl>(
+                std::move(empty_decorators),
+                method_name.lexeme,
+                parameters,
+                return_type,
+                std::move(body)
+            );
+            
+            methods.push_back(std::move(method));
+        } else {
+            skipNewlines();
+            if (!check(TokenType::DEDENT) && !isAtEnd()) {
+                advance();  // Skip unexpected tokens
+            }
+        }
+    }
+    
+    consume(TokenType::DEDENT, "Expected dedent after impl block");
+    
+    return std::make_unique<ImplBlock>(trait_name, for_type_name, std::move(methods));
+}
+
+// Parse decorators (@decorator or @decorator(args))
+std::vector<Decorator> Parser::parseDecorators() {
+    std::vector<Decorator> decorators;
+    
+    while (match({TokenType::AT})) {
+        Token name = consumeToken(TokenType::IDENTIFIER, "Expected decorator name after '@'");
+        
+        std::vector<std::unique_ptr<Expr>> arguments;
+        
+        // Check for decorator with arguments: @decorator(args)
+        if (match({TokenType::LPAREN})) {
+            if (!check(TokenType::RPAREN)) {
+                do {
+                    arguments.push_back(expression());
+                } while (match({TokenType::COMMA}));
+            }
+            consume(TokenType::RPAREN, "Expected ')' after decorator arguments");
+        }
+        
+        decorators.emplace_back(name.lexeme, std::move(arguments));
+        skipNewlines();
+    }
+    
+    return decorators;
 }
 
 } // namespace sapphire

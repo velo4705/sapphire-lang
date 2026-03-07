@@ -1,0 +1,43 @@
+# Macro System Test
+# Milestone 8 Phase 3
+
+print("Testing Basic Macro System\n")
+
+# Test 1: Simple macro with stringify
+print("Test 1: Simple debug macro")
+
+macro debug(expr):
+    print("Debug:", stringify(expr), "=", expr)
+
+let x = 42
+let y = 10
+debug(x + y)
+debug(x * 2)
+
+# Test 2: Macro without stringify
+print("\nTest 2: Simple print macro")
+
+macro greet(name):
+    print("Hello,", name, "!")
+
+greet("World")
+greet("Sapphire")
+
+# Test 3: Macro with multiple parameters
+print("\nTest 3: Macro with multiple parameters")
+
+macro add_and_print(a, b):
+    let result = a + b
+    print(a, "+", b, "=", result)
+
+add_and_print(5, 3)
+add_and_print(10, 20)
+
+# Test 4: Nested macro calls
+print("\nTest 4: Using macros in expressions")
+
+let value = 100
+debug(value / 2)
+debug(value > 50)
+
+print("\n✓ All macro tests passed!")

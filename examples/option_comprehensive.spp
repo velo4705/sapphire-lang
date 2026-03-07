@@ -1,0 +1,99 @@
+# Comprehensive Option Type Test - Milestone 5 Phase 1
+
+print("=== Option Type Test ===\n")
+
+# Basic Option construction
+print("1. Basic Construction:")
+let some_value = Some(42)
+let no_value = None()
+print("  some_value:", some_value)
+print("  no_value:", no_value)
+
+# is_some and is_none methods
+print("\n2. Checking Option State:")
+print("  some_value.is_some():", some_value.is_some())
+print("  some_value.is_none():", some_value.is_none())
+print("  no_value.is_some():", no_value.is_some())
+print("  no_value.is_none():", no_value.is_none())
+
+# unwrap and unwrap_or methods
+print("\n3. Unwrapping Values:")
+print("  some_value.unwrap():", some_value.unwrap())
+print("  no_value.unwrap_or(0):", no_value.unwrap_or(0))
+print("  some_value.unwrap_or(999):", some_value.unwrap_or(999))
+
+# Pattern matching with Option
+print("\n4. Pattern Matching:")
+print("  Matching some_value:")
+match some_value:
+    Some(x) => print("    Got Some with value:", x)
+    None => print("    Got None")
+
+print("  Matching no_value:")
+match no_value:
+    Some(x) => print("    Got Some with value:", x)
+    None => print("    Got None")
+
+# map method with regular function
+print("\n5. Using map:")
+fn double(x):
+    return x * 2
+
+let doubled = some_value.map(double)
+print("  some_value.map(double):", doubled)
+
+let none_mapped = no_value.map(double)
+print("  no_value.map(double):", none_mapped)
+
+# and_then method (flatMap)
+print("\n6. Using and_then:")
+fn safe_divide(x):
+    if x == 0:
+        return None()
+    return Some(100 / x)
+
+let result1 = Some(10).and_then(safe_divide)
+print("  Some(10).and_then(safe_divide):", result1)
+
+let result2 = Some(0).and_then(safe_divide)
+print("  Some(0).and_then(safe_divide):", result2)
+
+let result3 = None().and_then(safe_divide)
+print("  None().and_then(safe_divide):", result3)
+
+# Practical example: find user by ID
+print("\n7. Practical Example - find_user:")
+fn find_user(id):
+    if id == 1:
+        return Some("Alice")
+    if id == 2:
+        return Some("Bob")
+    return None()
+
+let user1 = find_user(1)
+match user1:
+    Some(name) => print("  Found user:", name)
+    None => print("  User not found")
+
+let user99 = find_user(99)
+match user99:
+    Some(name) => print("  Found user:", name)
+    None => print("  User not found")
+
+# Chaining operations
+print("\n8. Chaining Operations:")
+fn get_length(s):
+    return Some(len(s))
+
+let user_length = find_user(2).and_then(get_length)
+print("  find_user(2).and_then(get_length):", user_length)
+
+# Nested Options
+print("\n9. Nested Options:")
+let nested = Some(Some(100))
+print("  nested:", nested)
+match nested:
+    Some(inner) => print("  Outer Some contains:", inner)
+    None => print("  Outer is None")
+
+print("\n=== All Option tests passed! ===")

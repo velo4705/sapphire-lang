@@ -1,0 +1,9 @@
+# Simple guard test
+
+fn test(n):
+    return match n:
+        x if x < 0 => "neg"
+        _ => "pos"
+
+print(test(-1))
+print(test(1))

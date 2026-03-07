@@ -1,0 +1,88 @@
+# Itertools Module Demo - Sapphire v1.4.0
+
+print("╔════════════════════════════════════════════════════════╗")
+print("║  Sapphire Itertools Module                            ║")
+print("╚════════════════════════════════════════════════════════╝\n")
+
+# Note: These are conceptual examples showing how itertools
+# would be used once integrated with the interpreter
+
+print("1. Functional Operations")
+print("─────────────────────────────────────────────────────────")
+# let numbers = [1, 2, 3, 4, 5]
+# 
+# # Map - Transform each element
+# let doubled = map(numbers, fn(x) { x * 2 })  # [2, 4, 6, 8, 10]
+# 
+# # Filter - Keep matching elements
+# let evens = filter(numbers, fn(x) { x % 2 == 0 })  # [2, 4]
+# 
+# # Reduce - Combine into single value
+# let sum = reduce(numbers, 0, fn(acc, x) { acc + x })  # 15
+print("  map() - Transform elements")
+print("  filter() - Select elements")
+print("  reduce() - Combine elements\n")
+
+print("2. Slicing Operations")
+print("─────────────────────────────────────────────────────────")
+# let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+# 
+# let first_three = take(numbers, 3)  # [1, 2, 3]
+# let skip_three = drop(numbers, 3)   # [4, 5, 6, 7, 8, 9, 10]
+# 
+# let while_small = take_while(numbers, fn(x) { x < 5 })  # [1, 2, 3, 4]
+# let after_small = drop_while(numbers, fn(x) { x < 5 })  # [5, 6, 7, 8, 9, 10]
+print("  take(n) - First n elements")
+print("  drop(n) - Skip n elements")
+print("  take_while() / drop_while()\n")
+
+print("3. Combining Operations")
+print("─────────────────────────────────────────────────────────")
+# let names = ["alice", "bob", "charlie"]
+# let ages = [25, 30, 35]
+# 
+# let pairs = zip(names, ages)  # [("alice", 25), ("bob", 30), ("charlie", 35)]
+# let indexed = enumerate(names)  # [(0, "alice"), (1, "bob"), (2, "charlie")]
+print("  zip() - Combine two lists")
+print("  enumerate() - Add indices\n")
+
+print("4. Grouping Operations")
+print("─────────────────────────────────────────────────────────")
+# let numbers = [1, 2, 3, 4, 5, 6, 7, 8]
+# 
+# let chunks = chunk(numbers, 3)  # [[1, 2, 3], [4, 5, 6], [7, 8]]
+# let nested = [[1, 2], [3, 4], [5]]
+# let flat = flatten(nested)  # [1, 2, 3, 4, 5]
+print("  chunk(n) - Split into chunks")
+print("  flatten() - Flatten nested lists\n")
+
+print("5. Predicates")
+print("─────────────────────────────────────────────────────────")
+# let numbers = [2, 4, 6, 8]
+# let all_even = all(numbers, fn(x) { x % 2 == 0 })  # true
+# let any_odd = any(numbers, fn(x) { x % 2 != 0 })   # false
+# 
+# let found = find(numbers, fn(x) { x > 5 })  # Some(6)
+# let index = find_index(numbers, fn(x) { x > 5 })  # Some(2)
+print("  all() - Check if all match")
+print("  any() - Check if any match")
+print("  find() - Find first match (returns Option)")
+print("  find_index() - Find index (returns Option)\n")
+
+print("6. Utilities")
+print("─────────────────────────────────────────────────────────")
+# let numbers = [3, 1, 4, 1, 5, 9, 2, 6]
+# let unique_nums = unique(numbers)  # [3, 1, 4, 5, 9, 2, 6]
+# let reversed = reverse(numbers)    # [6, 2, 9, 5, 1, 4, 1, 3]
+# let sorted = sort(numbers)         # [1, 1, 2, 3, 4, 5, 6, 9]
+# 
+# let evens_odds = partition(numbers, fn(x) { x % 2 == 0 })
+# # ([4, 2, 6], [3, 1, 1, 5, 9])
+print("  unique() - Remove duplicates")
+print("  reverse() - Reverse order")
+print("  sort() - Sort elements")
+print("  partition() - Split by predicate\n")
+
+print("╔════════════════════════════════════════════════════════╗")
+print("║  Itertools enables functional programming patterns     ║")
+print("╚════════════════════════════════════════════════════════╝")

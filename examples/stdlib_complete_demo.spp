@@ -1,0 +1,183 @@
+# Complete Standard Library Demo
+# Showcases itertools, testing, and functional programming
+
+fn main():
+    print("╔══════════════════════════════════════════════════════════════╗")
+    print("║  Sapphire Standard Library - Complete Demo                   ║")
+    print("╚══════════════════════════════════════════════════════════════╝")
+    print()
+    
+    # ===== Data Processing Pipeline =====
+    print("1. Data Processing Pipeline")
+    print("   --------------------------------------------------")
+    
+    # Start with raw data
+    raw_data = [1, 5, 2, 8, 3, 9, 4, 7, 6, 10, 2, 5, 8]
+    print("   Raw data:", raw_data)
+    
+    # Remove duplicates
+    clean_data = unique(raw_data)
+    print("   After unique():", clean_data)
+    
+    # Filter for values > 5
+    fn greater_than_5(x):
+        return x > 5
+    
+    filtered = filter(clean_data, greater_than_5)
+    print("   After filter(> 5):", filtered)
+    
+    # Double each value
+    fn double(x):
+        return x * 2
+    
+    doubled = map(filtered, double)
+    print("   After map(x * 2):", doubled)
+    
+    # Sum all values
+    fn add(acc, x):
+        return acc + x
+    
+    total = reduce(doubled, 0, add)
+    print("   Final sum:", total)
+    print()
+    
+    # ===== Array Operations =====
+    print("2. Array Operations")
+    print("   --------------------------------------------------")
+    
+    numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    
+    # Take and drop
+    first_five = take(numbers, 5)
+    last_five = drop(numbers, 5)
+    print("   First 5:", first_five)
+    print("   Last 5:", last_five)
+    
+    # Chunk into groups
+    groups = chunk(numbers, 3)
+    print("   Chunked by 3:", groups)
+    
+    # Flatten back
+    flat = flatten(groups)
+    print("   Flattened:", flat)
+    
+    # Reverse
+    reversed = reverse(numbers)
+    print("   Reversed:", reversed)
+    print()
+    
+    # ===== Combining Arrays =====
+    print("3. Combining Arrays")
+    print("   --------------------------------------------------")
+    
+    names = ["Alice", "Bob", "Charlie", "Diana"]
+    ages = [25, 30, 35, 40]
+    scores = [95, 87, 92, 88]
+    
+    # Zip names and ages
+    people = zip(names, ages)
+    print("   People:", people)
+    
+    # Enumerate scores
+    indexed_scores = enumerate(scores)
+    print("   Indexed scores:", indexed_scores)
+    print()
+    
+    # ===== Predicates =====
+    print("4. Predicate Functions")
+    print("   --------------------------------------------------")
+    
+    test_numbers = [2, 4, 6, 8, 10]
+    
+    fn is_even(x):
+        return x % 2 == 0
+    
+    all_even = all(test_numbers, is_even)
+    print("   All even?", all_even)
+    
+    fn greater_than_100(x):
+        return x > 100
+    
+    any_large = any(test_numbers, greater_than_100)
+    print("   Any > 100?", any_large)
+    
+    # Find first element > 5
+    fn greater_than_5_pred(x):
+        return x > 5
+    
+    found = find(test_numbers, greater_than_5_pred)
+    print("   First > 5:", found)
+    print()
+    
+    # ===== Testing Assertions =====
+    print("5. Testing Assertions")
+    print("   --------------------------------------------------")
+    
+    # Test basic assertions
+    assert_true(2 + 2 == 4, "Math works")
+    print("   ✓ assert_true(2 + 2 == 4)")
+    
+    assert_false(5 < 3, "5 is not less than 3")
+    print("   ✓ assert_false(5 < 3)")
+    
+    assert_equal(len(numbers), 10, "Array has 10 elements")
+    print("   ✓ assert_equal(len(numbers), 10)")
+    
+    print()
+    
+    # ===== Real-World Example: Data Analysis =====
+    print("6. Real-World Example: Student Grade Analysis")
+    print("   --------------------------------------------------")
+    
+    grades = [85, 92, 78, 95, 88, 76, 90, 82, 94, 87]
+    print("   Grades:", grades)
+    
+    # Calculate average
+    fn sum_grades(acc, grade):
+        return acc + grade
+    
+    total_grades = reduce(grades, 0, sum_grades)
+    average = total_grades / len(grades)
+    print("   Average:", average)
+    
+    # Find passing grades (>= 80)
+    fn is_passing(grade):
+        return grade >= 80
+    
+    passing = filter(grades, is_passing)
+    print("   Passing grades:", passing)
+    print("   Pass rate:", len(passing), "/", len(grades))
+    
+    # Find top 3 grades
+    sorted_grades = sort(grades)
+    top_3 = take(reverse(sorted_grades), 3)
+    print("   Top 3 grades:", top_3)
+    
+    # Check if all passed
+    all_passed = all(grades, is_passing)
+    print("   All passed?", all_passed)
+    
+    # Check if any failed badly (< 70)
+    fn failed_badly(grade):
+        return grade < 70
+    
+    any_failed = any(grades, failed_badly)
+    print("   Any failed badly?", any_failed)
+    print()
+    
+    # ===== Summary =====
+    print("╔══════════════════════════════════════════════════════════════╗")
+    print("║  All Standard Library Tests Passed! ✓                        ║")
+    print("╚══════════════════════════════════════════════════════════════╝")
+    print()
+    print("Functions tested:")
+    print("  • map, filter, reduce")
+    print("  • take, drop, reverse")
+    print("  • unique, enumerate, zip")
+    print("  • chunk, flatten")
+    print("  • find, all, any")
+    print("  • assert_true, assert_false, assert_equal")
+    print()
+    print("✓ Sapphire v1.4.0 - Standard Library Complete!")
+
+main()

@@ -1,0 +1,18 @@
+# Simple Trait Test
+
+trait Drawable:
+    fn draw(self) -> str
+
+print("Trait declared")
+
+class Circle:
+    fn __init__(self, r):
+        self.radius = r
+    
+    fn draw(self) -> str:
+        return "Circle"
+
+print("Class with method declared")
+
+let c = Circle(5.0)
+print(c.draw())

@@ -1,0 +1,9 @@
+# Test guard on same line
+
+fn check_sign(n):
+    return match n:
+        x if x < 0 => "negative"
+        _ => "other"
+
+print(check_sign(-5))
+print(check_sign(5))

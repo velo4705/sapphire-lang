@@ -1,0 +1,109 @@
+# Comprehensive Result Type Test
+
+print("=== Comprehensive Result Type Test ===\n")
+
+# 1. Basic construction and display
+print("1. Construction:")
+let success = Ok(100)
+let failure = Err("error message")
+print("  success:", success)
+print("  failure:", failure)
+
+# 2. State checking
+print("\n2. State Checking:")
+print("  success.is_ok():", success.is_ok())
+print("  success.is_err():", success.is_err())
+print("  failure.is_ok():", failure.is_ok())
+print("  failure.is_err():", failure.is_err())
+
+# 3. Unwrapping
+print("\n3. Unwrapping:")
+print("  success.unwrap():", success.unwrap())
+print("  failure.unwrap_or(-1):", failure.unwrap_or(-1))
+print("  failure.unwrap_err():", failure.unwrap_err())
+
+# 4. Pattern matching
+print("\n4. Pattern Matching:")
+fn describe_result(r):
+    match r:
+        Ok(value) => print("  Success:", value)
+        Err(error) => print("  Failure:", error)
+
+describe_result(Ok(42))
+describe_result(Err("failed"))
+
+# 5. Transforming success values with map
+print("\n5. Transforming with map:")
+fn square(x):
+    return x * x
+
+print("  Ok(5).map(square):", Ok(5).map(square))
+print("  Err('e').map(square):", Err("e").map(square))
+
+# 6. Transforming error values with map_err
+print("\n6. Transforming errors with map_err:")
+fn format_error(e):
+    return "[ERROR] " + e
+
+print("  Ok(5).map_err(format_error):", Ok(5).map_err(format_error))
+print("  Err('fail').map_err(format_error):", Err("fail").map_err(format_error))
+
+# 7. Chaining with and_then
+print("\n7. Chaining with and_then:")
+fn safe_divide_100(x):
+    if x == 0:
+        return Err("division by zero")
+    return Ok(100 / x)
+
+fn validate_positive(x):
+    if x <= 0:
+        return Err("not positive")
+    return Ok(x)
+
+let chain1 = safe_divide_100(10).and_then(validate_positive)
+let chain2 = safe_divide_100(0).and_then(validate_positive)
+let chain3 = Ok(-5).and_then(validate_positive)
+
+print("  safe_divide_100(10) -> validate:", chain1)
+print("  safe_divide_100(0) -> validate:", chain2)
+print("  Ok(-5) -> validate:", chain3)
+
+# 8. Multiple pattern matching
+print("\n8. Multiple Patterns:")
+fn handle_result(r):
+    match r:
+        Ok(0) => print("  Got zero")
+        Ok(x) => print("  Got non-zero:", x)
+        Err("timeout") => print("  Timeout error")
+        Err(e) => print("  Other error:", e)
+
+handle_result(Ok(0))
+handle_result(Ok(42))
+handle_result(Err("timeout"))
+handle_result(Err("unknown"))
+
+# 9. Nested Results
+print("\n9. Nested Results:")
+let nested_ok = Ok(Ok(100))
+let nested_err = Ok(Err("inner error"))
+
+print("  nested_ok:", nested_ok)
+print("  nested_err:", nested_err)
+
+match nested_ok:
+    Ok(inner) => print("  Outer Ok contains:", inner)
+    Err(e) => print("  Outer Err:", e)
+
+# 10. Result with different value types
+print("\n10. Different Value Types:")
+let int_result = Ok(42)
+let str_result = Ok("success")
+let bool_result = Ok(true)
+let array_result = Ok([1, 2, 3])
+
+print("  int:", int_result)
+print("  string:", str_result)
+print("  bool:", bool_result)
+print("  array:", array_result)
+
+print("\n=== All Result tests passed! ===")

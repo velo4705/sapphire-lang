@@ -1,0 +1,235 @@
+# Sapphire Concurrency Showcase
+# Demonstrates async/await, channels, and select statements
+
+print("╔════════════════════════════════════════════════╗")
+print("║  Sapphire Concurrency Features Showcase       ║")
+print("╚════════════════════════════════════════════════╝\n")
+
+# ============================================
+# Part 1: Async/Await
+# ============================================
+print("=== Part 1: Async/Await ===")
+
+async fn fetch_user(id: int) -> str:
+    if id == 1:
+        return "User1"
+    return "User2"
+
+async fn fetch_data():
+    let user1 = await fetch_user(1)
+    let user2 = await fetch_user(2)
+    print("Fetched:", user1, "and", user2)
+    return "Complete"
+
+let result = await fetch_data()
+print("Result:", result)
+
+# ============================================
+# Part 2: Channels
+# ============================================
+print("\n=== Part 2: Channels ===")
+
+# Create channels
+let data_ch = chan<int>(5)
+let status_ch = chan<str>(3)
+
+# Send data
+data_ch <- 10
+data_ch <- 20
+data_ch <- 30
+
+status_ch <- "ready"
+status_ch <- "processing"
+
+print("Sent data to channels")
+print("data_ch size:", data_ch.size())
+print("status_ch size:", status_ch.size())
+
+# Receive data
+let d1 = <-data_ch
+let d2 = <-data_ch
+let s1 = <-status_ch
+
+print("Received:", d1, d2, s1)
+
+# ============================================
+# Part 3: Channel Methods
+# ============================================
+print("\n=== Part 3: Channel Methods ===")
+
+let control_ch = chan<str>(2)
+
+print("Is empty?", control_ch.empty())
+print("Is closed?", control_ch.is_closed())
+
+control_ch <- "start"
+control_ch <- "stop"
+
+print("After sending:")
+print("  Size:", control_ch.size())
+print("  Empty?", control_ch.empty())
+
+control_ch.close()
+print("After closing:")
+print("  Closed?", control_ch.is_closed())
+
+# Can still receive from closed channel
+let cmd1 = <-control_ch
+let cmd2 = <-control_ch
+print("  Received:", cmd1, cmd2)
+
+# ============================================
+# Part 4: Select Statement
+# ============================================
+print("\n=== Part 4: Select Statement ===")
+
+let ch1 = chan<int>(5)
+let ch2 = chan<str>(5)
+let ch3 = chan<int>(5)
+
+# Scenario 1: Data in first channel
+print("\nScenario 1: Data in ch1")
+ch1 <- 100
+
+select:
+    case x = <-ch1:
+        print("  Received from ch1:", x)
+    case y = <-ch2:
+        print("  Received from ch2:", y)
+    case z = <-ch3:
+        print("  Received from ch3:", z)
+    default:
+        print("  No data available")
+
+# Scenario 2: Data in second channel
+print("\nScenario 2: Data in ch2")
+ch2 <- "message"
+
+select:
+    case x = <-ch1:
+        print("  Received from ch1:", x)
+    case y = <-ch2:
+        print("  Received from ch2:", y)
+    case z = <-ch3:
+        print("  Received from ch3:", z)
+    default:
+        print("  No data available")
+
+# Scenario 3: No data (default)
+print("\nScenario 3: No data")
+
+select:
+    case x = <-ch1:
+        print("  Received from ch1:", x)
+    case y = <-ch2:
+        print("  Received from ch2:", y)
+    case z = <-ch3:
+        print("  Received from ch3:", z)
+    default:
+        print("  Using default case")
+
+# ============================================
+# Part 5: Producer-Consumer Pattern
+# ============================================
+print("\n=== Part 5: Producer-Consumer Pattern ===")
+
+async fn producer(ch, count: int):
+    for i in range(count):
+        ch <- i
+        print("  Produced:", i)
+    ch.close()
+    return "Producer done"
+
+async fn consumer(ch):
+    let total = 0
+    let received = 0
+    
+    # Consume until we get 5 items
+    for i in range(5):
+        let value = <-ch
+        total = total + value
+        received = received + 1
+        print("  Consumed:", value)
+    
+    return total
+
+let prod_ch = chan<int>(10)
+
+# Start producer
+let prod_result = await producer(prod_ch, 5)
+print(prod_result)
+
+# Start consumer
+let sum = await consumer(prod_ch)
+print("Consumer total:", sum)
+
+# ============================================
+# Part 6: Multi-Channel Coordination
+# ============================================
+print("\n=== Part 6: Multi-Channel Coordination ===")
+
+let results_ch = chan<int>(10)
+let errors_ch = chan<str>(10)
+let done_ch = chan<str>(1)
+
+# Simulate some work
+results_ch <- 42
+results_ch <- 84
+errors_ch <- "warning"
+done_ch <- "complete"
+
+print("Processing messages...")
+
+# Process 4 messages
+for i in range(4):
+    select:
+        case result = <-results_ch:
+            print("  Result:", result)
+        case error = <-errors_ch:
+            print("  Error:", error)
+        case status = <-done_ch:
+            print("  Status:", status)
+        default:
+            print("  Waiting...")
+
+# ============================================
+# Part 7: Async with Channels
+# ============================================
+print("\n=== Part 7: Async with Channels ===")
+
+async fn async_producer(ch):
+    ch <- 1
+    ch <- 2
+    ch <- 3
+    return "Async producer done"
+
+async fn async_consumer(ch):
+    let values = []
+    let v1 = <-ch
+    let v2 = <-ch
+    let v3 = <-ch
+    return v1 + v2 + v3
+
+let async_ch = chan<int>(5)
+
+let prod_status = await async_producer(async_ch)
+print(prod_status)
+
+let total_sum = await async_consumer(async_ch)
+print("Total sum:", total_sum)
+
+# ============================================
+# Summary
+# ============================================
+print("\n╔════════════════════════════════════════════════╗")
+print("║  Concurrency Features Summary                  ║")
+print("╠════════════════════════════════════════════════╣")
+print("║  ✓ Async/Await                                 ║")
+print("║  ✓ Channels (buffered & unbuffered)            ║")
+print("║  ✓ Channel Methods (close, size, etc.)         ║")
+print("║  ✓ Select Statement                            ║")
+print("║  ✓ Producer-Consumer Pattern                   ║")
+print("║  ✓ Multi-Channel Coordination                  ║")
+print("╚════════════════════════════════════════════════╝")
+
+print("\n✓ All concurrency features demonstrated successfully!")

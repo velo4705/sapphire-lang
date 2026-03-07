@@ -1,0 +1,11 @@
+# Test Result chaining with divide
+
+fn safe_divide(x):
+    if x == 0:
+        return Err("division by zero")
+    return Ok(100 / x)
+
+print("Test: Ok(10).and_then(safe_divide)")
+let r1 = Ok(10)
+let r2 = r1.and_then(safe_divide)
+print("Result:", r2)

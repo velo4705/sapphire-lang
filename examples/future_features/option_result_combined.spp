@@ -1,0 +1,158 @@
+# Combined Option and Result Showcase
+
+print("╔════════════════════════════════════════════════════════╗")
+print("║  Option<T> and Result<T, E> Working Together          ║")
+print("╚════════════════════════════════════════════════════════╝\n")
+
+# Scenario: User authentication system
+
+# Step 1: Find user (returns Option)
+fn find_user(username):
+    if username == "alice":
+        return Some("alice")
+    if username == "bob":
+        return Some("bob")
+    return None()
+
+# Step 2: Authenticate user (returns Result)
+fn authenticate(username, password):
+    if username == "alice":
+        if password == "secret123":
+            return Ok("alice_token")
+        return Err("invalid password")
+    if username == "bob":
+        if password == "pass456":
+            return Ok("bob_token")
+        return Err("invalid password")
+    return Err("user not found")
+
+# Step 3: Get permissions (returns Result)
+fn get_permissions(token):
+    if token == "alice_token":
+        return Ok("admin")
+    if token == "bob_token":
+        return Ok("user")
+    return Err("invalid token")
+
+print("1. Authentication Examples:\n")
+
+# Example 1: Successful login
+print("  Alice with correct password:")
+let user1 = find_user("alice")
+match user1:
+    Some(username) => print("    Found user:", username)
+    None => print("    User not found")
+
+let auth1 = authenticate("alice", "secret123")
+match auth1:
+    Ok(token) => print("    Authenticated, token:", token)
+    Err(e) => print("    Auth failed:", e)
+
+let perms1 = get_permissions("alice_token")
+match perms1:
+    Ok(p) => print("    Permissions:", p)
+    Err(e) => print("    Permission error:", e)
+
+# Example 2: Wrong password
+print("\n  Alice with wrong password:")
+let auth2 = authenticate("alice", "wrong")
+match auth2:
+    Ok(token) => print("    Authenticated, token:", token)
+    Err(e) => print("    Auth failed:", e)
+
+# Example 3: User not found
+print("\n  Unknown user:")
+let user3 = find_user("charlie")
+match user3:
+    Some(username) => print("    Found user:", username)
+    None => print("    User not found")
+
+# Example 4: Combining Option and Result
+print("\n2. Data Processing Pipeline:\n")
+
+fn fetch_data(source):
+    if source == "api":
+        return Some("raw_data")
+    return None()
+
+fn validate_data(data):
+    if data == "raw_data":
+        return Ok("validated")
+    return Err("invalid data")
+
+print("  Fetching from API:")
+let data = fetch_data("api")
+match data:
+    Some(d) => print("    Fetched:", d)
+    None => print("    No data")
+
+print("  Validating data:")
+let validated = validate_data("raw_data")
+match validated:
+    Ok(v) => print("    Valid:", v)
+    Err(e) => print("    Error:", e)
+
+# Example 5: Using unwrap_or for defaults
+print("\n3. Configuration with Defaults:\n")
+
+fn get_config_opt(key):
+    if key == "debug":
+        return Some("true")
+    return None()
+
+fn parse_bool(s):
+    if s == "true":
+        return Ok(true)
+    if s == "false":
+        return Ok(false)
+    return Err("not a boolean")
+
+let debug_str = get_config_opt("debug").unwrap_or("false")
+print("  Debug string:", debug_str)
+
+let debug_bool = parse_bool(debug_str).unwrap_or(false)
+print("  Debug mode:", debug_bool)
+
+let timeout_str = get_config_opt("timeout").unwrap_or("30")
+print("  Timeout:", timeout_str)
+
+# Example 6: Error handling with both types
+print("\n4. Error Handling Patterns:\n")
+
+fn safe_operation(x):
+    if x < 0:
+        return Err("negative input")
+    if x == 0:
+        return Ok(None())
+    return Ok(Some(100 / x))
+
+print("  safe_operation(10):")
+let op1 = safe_operation(10)
+match op1:
+    Ok(opt) =>
+        match opt:
+            Some(val) => print("    Result:", val)
+            None => print("    No result (zero)")
+    Err(e) => print("    Error:", e)
+
+print("\n  safe_operation(0):")
+let op2 = safe_operation(0)
+match op2:
+    Ok(opt) =>
+        match opt:
+            Some(val) => print("    Result:", val)
+            None => print("    No result (zero)")
+    Err(e) => print("    Error:", e)
+
+print("\n  safe_operation(-5):")
+let op3 = safe_operation(-5)
+match op3:
+    Ok(opt) =>
+        match opt:
+            Some(val) => print("    Result:", val)
+            None => print("    No result (zero)")
+    Err(e) => print("    Error:", e)
+
+print("\n╔════════════════════════════════════════════════════════╗")
+print("║  Milestone 5 Phases 1 & 2 Complete!                   ║")
+print("╚════════════════════════════════════════════════════════╝")

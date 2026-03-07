@@ -1,0 +1,57 @@
+# Goroutines Test
+
+fn worker(id: int, ch):
+    print("Worker", id, "started")
+    for i in range(3):
+        ch <- id * 10 + i
+    print("Worker", id, "done")
+
+fn main():
+    print("=== Goroutines Test ===\n")
+    
+    # Test 1: Single goroutine
+    print("Test 1: Single goroutine")
+    let ch1 = chan<int>(10)
+    
+    go worker(1, ch1)
+    
+    print("Main: waiting for results")
+    for i in range(3):
+        let val = <-ch1
+        print("Main received:", val)
+    
+    # Test 2: Multiple goroutines
+    print("\nTest 2: Multiple goroutines")
+    let ch2 = chan<int>(20)
+    
+    go worker(1, ch2)
+    go worker(2, ch2)
+    go worker(3, ch2)
+    
+    print("Main: collecting results")
+    for i in range(9):
+        let val = <-ch2
+        print("  Result:", val)
+    
+    # Test 3: Goroutine with channel iteration
+    print("\nTest 3: Producer-consumer with goroutines")
+    let ch3 = chan<int>(5)
+    
+    fn producer(ch):
+        print("Producer: starting")
+        for i in range(5):
+            ch <- i
+            print("  Produced:", i)
+        ch.close()
+        print("Producer: done")
+    
+    go producer(ch3)
+    
+    print("Consumer: starting")
+    for value in ch3:
+        print("  Consumed:", value)
+    print("Consumer: done")
+    
+    print("\n✓ Goroutines test complete!")
+
+main()

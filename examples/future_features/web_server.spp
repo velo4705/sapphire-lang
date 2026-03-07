@@ -1,0 +1,182 @@
+# Full-Stack Web Application in Sapphire
+
+import http::{Server, Router, Request, Response, middleware}
+import db::{Database, Model}
+import json
+import crypto::{hash, jwt}
+
+# ============ Database Models ============
+@model
+class User:
+    
+    @staticmethod
+    async fn create(username: str, email: str, password: str) -> Result<User, Error>:
+        let hash = crypto.hash_password(password)
+        let user = User(username=username, email=email, password_hash=hash)
+        await user.save()
+        return Ok(user)
+    
+    fn verify_password(self, password: str) -> bool:
+        return crypto.verify_password(password, self.password_hash)
+
+@model
+class Post:
+    
+    @relation
+
+# ============ API Routes ============
+let router = Router()
+
+# Middleware
+@router.use
+async fn auth_middleware(req: Request, next: fn) -> Response:
+    let token = req.headers.get("Authorization")?.strip_prefix("Bearer ")?
+    
+    match jwt.verify(token):
+        Ok(payload):
+            req.user = await User.find(payload["user_id"])
+            return await next(req)
+        Err(_):
+            return Response.json({"error": "Unauthorized"}, status=401)
+
+# Authentication endpoints
+@router.post("/api/auth/register")
+async fn register(req: Request) -> Response:
+    let data = req.json<RegisterData>()?
+    
+    match await User.create(data.username, data.email, data.password):
+        Ok(user):
+            let token = jwt.sign({"user_id": user.id}, expires_in="7d")
+            return Response.json({
+                "user": user.to_dict(),
+                "token": token
+            })
+        Err(e):
+            return Response.json({"error": str(e)}, status=400)
+
+@router.post("/api/auth/login")
+async fn login(req: Request) -> Response:
+    let data = req.json<LoginData>()?
+    let user = await User.find_by(email=data.email)?
+    
+    if not user.verify_password(data.password):
+        return Response.json({"error": "Invalid credentials"}, status=401)
+    
+    let token = jwt.sign({"user_id": user.id}, expires_in="7d")
+    return Response.json({"user": user.to_dict(), "token": token})
+
+# Post endpoints
+@router.get("/api/posts")
+async fn get_posts(req: Request) -> Response:
+    let page = req.query.get("page", "1").parse<int>().unwrap_or(1)
+    let limit = 20
+    
+    let posts = await Post.query()
+        .include("author")
+        .order_by("created_at", desc=true)
+        .paginate(page, limit)
+    
+    return Response.json({
+        "posts": [p.to_dict() for p in posts.items],
+        "total": posts.total,
+        "page": page
+    })
+
+@router.post("/api/posts")
+@middleware.require_auth
+async fn create_post(req: Request) -> Response:
+    let data = req.json<PostCreate>()?
+    
+    let post = Post(
+        title=data.title,
+        content=data.content,
+        author_id=req.user.id
+    )
+    await post.save()
+    
+    return Response.json(post.to_dict(), status=201)
+
+@router.get("/api/posts/:id")
+async fn get_post(req: Request) -> Response:
+    let post_id = req.params["id"].parse<int>()?
+    let post = await Post.query()
+        .include("author")
+        .find(post_id)?
+    
+    return Response.json(post.to_dict())
+
+@router.put("/api/posts/:id")
+@middleware.require_auth
+async fn update_post(req: Request) -> Response:
+    let post_id = req.params["id"].parse<int>()?
+    let post = await Post.find(post_id)?
+    
+    if post.author_id != req.user.id:
+        return Response.json({"error": "Forbidden"}, status=403)
+    
+    let data = req.json<PostUpdate>()?
+    post.title = data.title
+    post.content = data.content
+    await post.save()
+    
+    return Response.json(post.to_dict())
+
+@router.delete("/api/posts/:id")
+@middleware.require_auth
+async fn delete_post(req: Request) -> Response:
+    let post_id = req.params["id"].parse<int>()?
+    let post = await Post.find(post_id)?
+    
+    if post.author_id != req.user.id:
+        return Response.json({"error": "Forbidden"}, status=403)
+    
+    await post.delete()
+    return Response.json({"message": "Post deleted"})
+
+# WebSocket for real-time features
+@router.websocket("/ws")
+async fn websocket_handler(ws: WebSocket):
+    await ws.accept()
+    
+    try:
+        while true:
+            let message = await ws.receive_text()
+            let data = json.parse(message)
+            
+            match data["type"]:
+                "ping":
+                    await ws.send_json({"type": "pong"})
+                "subscribe":
+                    await subscribe_to_channel(ws, data["channel"])
+                _:
+                    await ws.send_json({"error": "Unknown message type"})
+    catch WebSocketDisconnect:
+        print("Client disconnected")
+
+# Static files
+@router.get("/")
+async fn index(req: Request) -> Response:
+    return Response.file("static/index.html")
+
+@router.static("/static", "static")
+
+# ============ Main Application ============
+async fn main():
+    # Database setup
+    let db = Database.connect("postgresql://localhost/sapphire_app")
+    await db.migrate()
+    
+    # Create server
+    let server = Server.new("0.0.0.0:8000")
+    
+    # Middleware
+    server.use(middleware.cors(allow_origins=["*"]))
+    server.use(middleware.logger())
+    server.use(middleware.compress())
+    
+    # Routes
+    server.use(router)
+    
+    # Start server
+    print("🚀 Server running on http://localhost:8000")
+    await server.listen()

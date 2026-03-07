@@ -1,0 +1,112 @@
+# Option Type for Error Handling
+
+print("=== Option-based Error Handling ===\n")
+
+# Example 1: Safe division
+print("1. Safe Division:")
+fn safe_divide(a, b):
+    if b == 0:
+        return None()
+    return Some(a / b)
+
+let result1 = safe_divide(10, 2)
+let result2 = safe_divide(10, 0)
+
+match result1:
+    Some(value) => print("  10 / 2 =", value)
+    None => print("  Division failed")
+
+match result2:
+    Some(value) => print("  10 / 0 =", value)
+    None => print("  Division failed (divide by zero)")
+
+# Example 2: Safe string parsing
+print("\n2. Safe String Parsing:")
+fn parse_number(s):
+    if s == "42":
+        return Some(42)
+    if s == "100":
+        return Some(100)
+    if s == "0":
+        return Some(0)
+    return None()
+
+let inputs = ["42", "invalid", "100", "xyz"]
+let i = 0
+while i < len(inputs):
+    let parsed = parse_number(inputs[i])
+    match parsed:
+        Some(num) => print("  Parsed '" + inputs[i] + "' as", num)
+        None => print("  Failed to parse '" + inputs[i] + "'")
+    i = i + 1
+
+# Example 3: Cascading operations with early exit
+print("\n3. Cascading Operations:")
+fn step1(x):
+    print("  Step 1: input =", x)
+    if x < 0:
+        return None()
+    return Some(x + 10)
+
+fn step2(x):
+    print("  Step 2: input =", x)
+    if x > 100:
+        return None()
+    return Some(x * 2)
+
+fn step3(x):
+    print("  Step 3: input =", x)
+    return Some(x - 5)
+
+print("  Processing 5:")
+let result_a = step1(5).and_then(step2).and_then(step3)
+print("  Final result:", result_a)
+
+print("\n  Processing -5:")
+let result_b = step1(-5).and_then(step2).and_then(step3)
+print("  Final result:", result_b)
+
+print("\n  Processing 50:")
+let result_c = step1(50).and_then(step2).and_then(step3)
+print("  Final result:", result_c)
+
+# Example 4: Optional return values
+print("\n4. Optional Return Values:")
+fn first_positive(arr):
+    let i = 0
+    while i < len(arr):
+        if arr[i] > 0:
+            return Some(arr[i])
+        i = i + 1
+    return None()
+
+let numbers1 = [-5, -3, 7, 10]
+let numbers2 = [-5, -3, -7, -10]
+
+let first1 = first_positive(numbers1)
+let first2 = first_positive(numbers2)
+
+print("  First positive in", numbers1, ":", first1)
+print("  First positive in", numbers2, ":", first2)
+
+# Example 5: Avoiding null pointer errors
+print("\n5. Avoiding Null Pointer Errors:")
+fn get_user_email(user_id):
+    if user_id == 1:
+        return Some("alice@example.com")
+    if user_id == 2:
+        return Some("bob@example.com")
+    return None()
+
+fn send_email(email):
+    print("  Sending email to:", email)
+    return true
+
+# Safe approach with Option
+let user_id = 99
+let email = get_user_email(user_id)
+match email:
+    Some(addr) => send_email(addr)
+    None => print("  No email found for user", user_id)
+
+print("\n=== Error handling examples complete! ===")

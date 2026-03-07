@@ -1,0 +1,10 @@
+# Test without main function
+
+fn classify(n):
+    return match n:
+        0 => "zero"
+        _ => "other"
+
+print("Starting test")
+let result = classify(0)
+print(result)

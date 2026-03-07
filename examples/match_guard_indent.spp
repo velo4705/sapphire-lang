@@ -1,0 +1,11 @@
+# Guard test with careful indentation
+
+fn test(n):
+    return match n:
+        0 => "zero"
+        x if x > 0 => "positive"
+        _ => "other"
+
+print(test(0))
+print(test(5))
+print(test(-1))

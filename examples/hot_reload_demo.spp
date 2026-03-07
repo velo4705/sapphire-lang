@@ -1,0 +1,15 @@
+# Hot Reload Demo
+# Version 1
+
+fn add(a, b):
+    return a + b
+
+fn multiply(a, b):
+    return a * b
+
+let config_value = 100
+let app_name = "Sapphire App"
+
+print("Hot Reload Demo - Version 1")
+print("Config value:", config_value)
+print("App name:", app_name)

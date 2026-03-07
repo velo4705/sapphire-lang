@@ -1,0 +1,30 @@
+fn factorial(n: int) -> int:
+    if n <= 1:
+        return 1
+    return n * factorial(n - 1)
+
+fn fibonacci(n: int) -> int:
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+fn main():
+    print("=== Debugging Example ===")
+    
+    # Test factorial
+    let fact5 = factorial(5)
+    print("Factorial of 5:", fact5)
+    
+    # Test fibonacci
+    let fib7 = fibonacci(7)
+    print("Fibonacci of 7:", fib7)
+    
+    # Test loop
+    let sum = 0
+    for i in range(10):
+        sum = sum + i
+    print("Sum 0-9:", sum)
+    
+    print("=== Done ===")
+
+main()

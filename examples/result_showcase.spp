@@ -1,0 +1,83 @@
+# Result Type Showcase - Sapphire v1.3.0
+
+print("╔════════════════════════════════════════════════════════╗")
+print("║  Sapphire Result<T, E> Type - Milestone 5 Phase 2     ║")
+print("╚════════════════════════════════════════════════════════╝\n")
+
+# Feature 1: Type-safe error handling
+print("✓ Type-safe error handling")
+fn divide(a, b):
+    if b == 0:
+        return Err("division by zero")
+    return Ok(a / b)
+
+let success = divide(10, 2)
+let failure = divide(10, 0)
+print("  ", success, "and", failure, "\n")
+
+# Feature 2: Pattern matching
+print("✓ Pattern matching")
+match success:
+    Ok(value) => print("  Success:", value)
+    Err(error) => print("  Error:", error)
+
+match failure:
+    Ok(value) => print("  Success:", value)
+    Err(error) => print("  Error:", error)
+print()
+
+# Feature 3: Safe unwrapping
+print("✓ Safe unwrapping")
+print("  success.unwrap():", success.unwrap())
+print("  failure.unwrap_or(0):", failure.unwrap_or(0))
+print("  failure.unwrap_err():", failure.unwrap_err(), "\n")
+
+# Feature 4: Transforming values
+print("✓ Transforming values")
+fn double(x):
+    return x * 2
+
+print("  Ok(5).map(double):", Ok(5).map(double))
+print("  Err('e').map(double):", Err("e").map(double), "\n")
+
+# Feature 5: Transforming errors
+print("✓ Transforming errors")
+fn add_prefix(e):
+    return "[ERROR] " + e
+
+print("  Ok(5).map_err(add_prefix):", Ok(5).map_err(add_prefix))
+print("  Err('fail').map_err(add_prefix):", Err("fail").map_err(add_prefix), "\n")
+
+# Feature 6: Chained operations
+print("✓ Chained operations")
+fn validate(x):
+    if x < 0:
+        return Err("negative")
+    return Ok(x)
+
+let chain1 = divide(20, 2).and_then(validate)
+let chain2 = divide(20, 0).and_then(validate)
+
+print("  divide(20, 2) -> validate:", chain1)
+print("  divide(20, 0) -> validate:", chain2, "\n")
+
+# Feature 7: Real-world usage
+print("✓ Real-world usage")
+fn authenticate(username, password):
+    if username == "admin":
+        if password == "secret":
+            return Ok("admin_token")
+        return Err("invalid password")
+    return Err("user not found")
+
+let auth1 = authenticate("admin", "secret")
+let auth2 = authenticate("admin", "wrong")
+let auth3 = authenticate("guest", "pass")
+
+print("  Admin with correct password:", auth1)
+print("  Admin with wrong password:", auth2)
+print("  Unknown user:", auth3, "\n")
+
+print("╔════════════════════════════════════════════════════════╗")
+print("║  All Result<T, E> features working perfectly!         ║")
+print("╚════════════════════════════════════════════════════════╝")

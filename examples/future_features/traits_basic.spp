@@ -1,0 +1,25 @@
+# Basic Trait Example
+
+# Define a trait
+trait Drawable:
+    fn draw(self) -> str
+    fn area(self) -> float
+
+# Define a class
+class Circle:
+    fn __init__(self, r):
+        self.radius = r
+    
+    # Implement the trait
+    impl Drawable:
+        fn draw(self) -> str:
+            return "Circle"
+        
+        fn area(self) -> float:
+            return 3.14159 * self.radius * self.radius
+
+# Test it
+print("Trait system test:")
+let c = Circle(5.0)
+print(c.draw())
+print(c.area())

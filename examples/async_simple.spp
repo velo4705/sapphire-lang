@@ -1,0 +1,11 @@
+# Simple Async/Await Test
+
+async fn fetch_data() -> str:
+    return "Hello from async function"
+
+async fn main():
+    let result = await fetch_data()
+    print(result)
+
+# Call async main
+main()

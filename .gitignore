@@ -70,7 +70,9 @@ temp/
 
 # Development tracking files (not needed in repo)
 MILESTONE*_*.txt
+MILESTONE*_*.md
 SESSION_SUMMARY*.txt
+SESSION_SUMMARY*.md
 CURRENT_STATUS.txt
 PROJECT_STATUS_*.txt
 PROJECT_SUMMARY.txt
@@ -82,15 +84,24 @@ MILESTONE_COMPLETION_PLAN.md
 CORE_FEATURES_VERIFICATION.md
 PERFORMANCE.md
 RELEASE_NOTES.md
-CHANGELOG.md
 
 # Test files
 test_*.spp
+test_results.txt
+TEST_RESULTS_SUMMARY.md
 
 # Kiro IDE/spec files (local development only)
 .kiro/
+
+# Development documentation (milestones, summaries, etc.)
+.dev-docs/
+
+# Development tools and temporary test files
+.dev-tools/
 
 
 test-project/
 
 ROADMAP_V1.1.md
+
+examples/challenges

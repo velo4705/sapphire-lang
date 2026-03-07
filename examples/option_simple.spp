@@ -1,0 +1,8 @@
+# Simple Option test
+
+let some_value = Some(42)
+let no_value = None()
+
+print("some_value:", some_value)
+print("no_value:", no_value)
+print("Type check - some_value.is_some():", some_value.is_some())

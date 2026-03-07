@@ -1,0 +1,47 @@
+# Channel Methods Test
+
+fn main():
+    print("=== Channel Methods Test ===\n")
+    
+    # Create a channel
+    let ch = chan<int>(5)
+    print("Created channel:", ch)
+    
+    # Test empty()
+    print("Is empty?", ch.empty())
+    
+    # Test size()
+    print("Size:", ch.size())
+    
+    # Send some values
+    ch <- 10
+    ch <- 20
+    ch <- 30
+    
+    print("\nAfter sending 3 values:")
+    print("Is empty?", ch.empty())
+    print("Size:", ch.size())
+    
+    # Test is_closed()
+    print("Is closed?", ch.is_closed())
+    
+    # Close the channel
+    ch.close()
+    print("\nAfter closing:")
+    print("Is closed?", ch.is_closed())
+    print("Channel:", ch)
+    
+    # Receive remaining values
+    print("\nReceiving remaining values:")
+    let v1 = <-ch
+    let v2 = <-ch
+    let v3 = <-ch
+    print("Values:", v1, v2, v3)
+    
+    print("\nAfter receiving all values:")
+    print("Is empty?", ch.empty())
+    print("Size:", ch.size())
+    
+    print("\n✓ Channel methods test complete!")
+
+main()

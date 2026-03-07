@@ -1,0 +1,185 @@
+# Comprehensive Decorators Showcase
+
+print("=== Sapphire Decorators Showcase ===\n")
+
+# ============================================================================
+# Part 1: User-Defined Decorators
+# ============================================================================
+
+print("Part 1: User-Defined Decorators\n")
+
+# Simple wrapper decorator
+fn log_decorator(func):
+    fn wrapper():
+        print("[LOG] Calling function")
+        func()
+        print("[LOG] Finished function")
+    return wrapper
+
+@log_decorator
+fn greet():
+    print("Hello, World!")
+
+greet()
+
+# Decorator with function arguments
+print()
+fn validate_positive(func):
+    fn wrapper(n: int):
+        if n < 0:
+            print("[ERROR] Argument must be positive")
+            return 0
+        return func(n)
+    return wrapper
+
+@validate_positive
+fn square(n: int) -> int:
+    return n * n
+
+print("square(5):", square(5))
+print("square(-3):", square(-3))
+
+# Multiple decorators
+print()
+fn decorator_a(func):
+    fn wrapper():
+        print("[A] Before")
+        func()
+        print("[A] After")
+    return wrapper
+
+fn decorator_b(func):
+    fn wrapper():
+        print("[B] Before")
+        func()
+        print("[B] After")
+    return wrapper
+
+@decorator_a
+@decorator_b
+fn multi_decorated():
+    print("[FUNC] Executing")
+
+multi_decorated()
+
+# ============================================================================
+# Part 2: Built-in @cache Decorator
+# ============================================================================
+
+print("\n\nPart 2: Built-in @cache Decorator\n")
+
+@cache
+fn fibonacci(n: int) -> int:
+    print("  Computing fib(", n, ")")
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+print("First call to fibonacci(6):")
+let fib6 = fibonacci(6)
+print("Result:", fib6)
+
+print("\nSecond call to fibonacci(6) (cached):")
+let fib6_cached = fibonacci(6)
+print("Result:", fib6_cached)
+
+print("\nCall to fibonacci(7) (partial cache hit):")
+let fib7 = fibonacci(7)
+print("Result:", fib7)
+
+# ============================================================================
+# Part 3: Built-in @timing Decorator
+# ============================================================================
+
+print("\n\nPart 3: Built-in @timing Decorator\n")
+
+@timing
+fn compute_sum(n: int) -> int:
+    let sum = 0
+    for i in range(n):
+        sum = sum + i
+    return sum
+
+print("Computing sum of 0 to 999:")
+let result = compute_sum(1000)
+print("Result:", result)
+
+# ============================================================================
+# Part 4: Built-in @deprecated Decorator
+# ============================================================================
+
+print("\n\nPart 4: Built-in @deprecated Decorator\n")
+
+@deprecated("This function is obsolete. Use modern_api() instead")
+fn legacy_api():
+    return "Legacy result"
+
+print("Calling deprecated function:")
+let legacy_result = legacy_api()
+print("Result:", legacy_result)
+
+# ============================================================================
+# Part 5: Combining Built-in Decorators
+# ============================================================================
+
+print("\n\nPart 5: Combining Built-in Decorators\n")
+
+@timing
+@cache
+fn expensive_operation(x: int, y: int) -> int:
+    print("  Performing expensive operation...")
+    let result = x * x + y * y
+    return result
+
+print("First call to expensive_operation(3, 4):")
+let r1 = expensive_operation(3, 4)
+print("Result:", r1)
+
+print("\nSecond call to expensive_operation(3, 4) (cached, no timing):")
+let r2 = expensive_operation(3, 4)
+print("Result:", r2)
+
+print("\nCall to expensive_operation(5, 12) (new args, timed):")
+let r3 = expensive_operation(5, 12)
+print("Result:", r3)
+
+# ============================================================================
+# Part 6: Mixing User-Defined and Built-in Decorators
+# ============================================================================
+
+print("\n\nPart 6: Mixing User-Defined and Built-in Decorators\n")
+
+fn debug_decorator(func):
+    fn wrapper(n: int):
+        print("[DEBUG] Input:", n)
+        let result = func(n)
+        print("[DEBUG] Output:", result)
+        return result
+    return wrapper
+
+@debug_decorator
+@cache
+@timing
+fn complex_computation(n: int) -> int:
+    print("  Computing...")
+    return n * n * n
+
+print("First call:")
+let c1 = complex_computation(5)
+
+print("\nSecond call (cached):")
+let c2 = complex_computation(5)
+
+# ============================================================================
+# Summary
+# ============================================================================
+
+print("\n\n=== Decorator Features Summary ===")
+print("✓ User-defined decorators")
+print("✓ Decorators with arguments")
+print("✓ Multiple decorator stacking")
+print("✓ Built-in @cache (memoization)")
+print("✓ Built-in @timing (performance)")
+print("✓ Built-in @deprecated (warnings)")
+print("✓ Mixing user-defined and built-in decorators")
+print("\n✓ All decorator features working!")

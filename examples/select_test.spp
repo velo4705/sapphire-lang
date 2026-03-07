@@ -1,0 +1,74 @@
+# Select Statement Test
+
+fn main():
+    print("=== Select Statement Test ===\n")
+    
+    # Create two channels
+    let ch1 = chan<int>(5)
+    let ch2 = chan<str>(5)
+    
+    # Test 1: Select with data in first channel
+    print("Test 1: Data in first channel")
+    ch1 <- 42
+    
+    select:
+        case x = <-ch1:
+            print("Received from ch1:", x)
+        case y = <-ch2:
+            print("Received from ch2:", y)
+        default:
+            print("No data available")
+    
+    # Test 2: Select with data in second channel
+    print("\nTest 2: Data in second channel")
+    ch2 <- "Hello"
+    
+    select:
+        case x = <-ch1:
+            print("Received from ch1:", x)
+        case y = <-ch2:
+            print("Received from ch2:", y)
+        default:
+            print("No data available")
+    
+    # Test 3: Select with no data (default case)
+    print("\nTest 3: No data (default case)")
+    
+    select:
+        case x = <-ch1:
+            print("Received from ch1:", x)
+        case y = <-ch2:
+            print("Received from ch2:", y)
+        default:
+            print("No data available - using default")
+    
+    # Test 4: Select with multiple values
+    print("\nTest 4: Multiple values")
+    ch1 <- 100
+    ch1 <- 200
+    ch2 <- "World"
+    
+    # First select
+    select:
+        case x = <-ch1:
+            print("First select - ch1:", x)
+        case y = <-ch2:
+            print("First select - ch2:", y)
+    
+    # Second select
+    select:
+        case x = <-ch1:
+            print("Second select - ch1:", x)
+        case y = <-ch2:
+            print("Second select - ch2:", y)
+    
+    # Third select
+    select:
+        case x = <-ch1:
+            print("Third select - ch1:", x)
+        case y = <-ch2:
+            print("Third select - ch2:", y)
+    
+    print("\n✓ Select statement test complete!")
+
+main()

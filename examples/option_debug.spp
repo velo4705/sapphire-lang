@@ -1,0 +1,5 @@
+# Debug Option test
+
+print("Creating None...")
+let no_value = None()
+print("Created None, value is:", no_value)

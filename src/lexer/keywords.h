@@ -28,7 +28,6 @@ static const std::map<std::string, TokenType> KEYWORDS = {
     {"false", TokenType::FALSE},
     {"False", TokenType::FALSE},
     {"none", TokenType::NONE},
-    {"None", TokenType::NONE},
     {"and", TokenType::AND},
     {"or", TokenType::OR},
     {"not", TokenType::NOT},
@@ -40,7 +39,18 @@ static const std::map<std::string, TokenType> KEYWORDS = {
     {"try", TokenType::TRY},
     {"catch", TokenType::CATCH},
     {"finally", TokenType::FINALLY},
-    {"throw", TokenType::THROW}
+    {"throw", TokenType::THROW},
+    {"trait", TokenType::TRAIT},
+    {"impl", TokenType::IMPL},
+    {"Self", TokenType::SELF},
+    {"where", TokenType::WHERE},
+    {"dyn", TokenType::DYN},
+    {"chan", TokenType::CHAN},
+    {"go", TokenType::GO},
+    {"select", TokenType::SELECT},
+    {"case", TokenType::CASE},
+    {"default", TokenType::DEFAULT},
+    {"macro", TokenType::MACRO}
 };
 
 } // namespace sapphire

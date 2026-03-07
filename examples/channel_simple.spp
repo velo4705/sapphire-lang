@@ -1,0 +1,31 @@
+# Simple Channel Test
+
+# Create a buffered channel
+let ch = chan<int>(10)
+
+print("Created channel with capacity 10")
+
+# Send to channel
+ch <- 42
+ch <- 100
+ch <- 200
+
+print("Sent 3 values to channel")
+
+# Receive from channel
+let value1 = <-ch
+let value2 = <-ch
+let value3 = <-ch
+
+print("Received:", value1)
+print("Received:", value2)
+print("Received:", value3)
+
+print("Channel test complete!")
+
+# Test with async/await
+async fn test():
+    return "Async works too!"
+
+let result = await test()
+print(result)

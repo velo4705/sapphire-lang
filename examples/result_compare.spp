@@ -1,0 +1,5 @@
+# Test comparison
+
+let x = 10.0
+print("x:", x)
+print("x <= 0:", x <= 0)

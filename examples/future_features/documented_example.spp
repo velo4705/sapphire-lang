@@ -1,0 +1,71 @@
+/// Calculate the factorial of a number
+///
+/// This function uses recursion to calculate n!
+/// For n <= 1, it returns 1.
+///
+/// ## Example
+/// ```
+/// let result = factorial(5)
+/// print(result)  # 120
+/// ```
+fn factorial(n: int) -> int:
+    if n <= 1:
+        return 1
+    return n * factorial(n - 1)
+
+/// Calculate the nth Fibonacci number
+///
+/// Uses recursion to calculate Fibonacci numbers.
+/// The sequence starts with 0, 1, 1, 2, 3, 5, 8...
+///
+/// ## Parameters
+/// - `n`: The position in the Fibonacci sequence
+///
+/// ## Returns
+/// The nth Fibonacci number
+fn fibonacci(n: int) -> int:
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+/// Represents a point in 2D space
+///
+/// The Point class provides methods for geometric operations
+/// and distance calculations.
+class Point:
+    /// Initialize a new Point
+    ///
+    /// Creates a point at the given coordinates.
+    fn init(x: int, y: int):
+        self.x = x
+        self.y = y
+    
+    /// Calculate distance from origin
+    ///
+    /// Returns the Euclidean distance from (0, 0).
+    fn distance_from_origin() -> float:
+        return (self.x * self.x + self.y * self.y) ** 0.5
+
+/// Represents a circle
+///
+/// A circle is defined by its center point and radius.
+class Circle:
+    /// Initialize a new Circle
+    fn init(center: Point, radius: float):
+        self.center = center
+        self.radius = radius
+    
+    /// Calculate the area of the circle
+    ///
+    /// Uses the formula: π * r²
+    fn area() -> float:
+        return 3.14159 * self.radius * self.radius
+
+fn main():
+    print("Factorial of 5:", factorial(5))
+    print("Fibonacci of 7:", fibonacci(7))
+    
+    let p = Point(3, 4)
+    print("Distance from origin:", p.distance_from_origin())
+
+main()

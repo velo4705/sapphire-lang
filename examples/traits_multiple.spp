@@ -1,0 +1,37 @@
+# Multiple Traits on Same Type
+
+trait Drawable:
+    fn draw(self) -> str
+
+trait Resizable:
+    fn resize(self, factor) -> float
+
+trait Printable:
+    fn to_string(self) -> str
+
+class Shape:
+    fn __init__(self, size):
+        self.size = size
+
+impl Drawable for Shape:
+    fn draw(self) -> str:
+        return "Shape"
+
+impl Resizable for Shape:
+    fn resize(self, factor) -> float:
+        self.size = self.size * factor
+        return self.size
+
+impl Printable for Shape:
+    fn to_string(self) -> str:
+        return "Shape"
+
+print("=== Multiple Traits Demo ===")
+
+let s = Shape(10.0)
+print("Initial:", s.to_string())
+print("Draw:", s.draw())
+print("Resize by 2:", s.resize(2.0))
+print("Draw again:", s.draw())
+
+print("\n✓ Multiple traits on same type work!")

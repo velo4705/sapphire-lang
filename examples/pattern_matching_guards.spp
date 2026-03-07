@@ -1,0 +1,22 @@
+# Pattern Matching with Guards
+
+fn check_sign(n):
+    return match n:
+        x if x < 0 => "negative"
+        x if x > 0 => "positive"
+        _ => "zero"
+
+fn check_parity(n):
+    return match n:
+        x if x % 2 == 0 => "even"
+        _ => "odd"
+
+print("Testing guards:")
+print(check_sign(-5))
+print(check_sign(0))
+print(check_sign(10))
+
+print("\nTesting parity:")
+print(check_parity(4))
+print(check_parity(7))
+print(check_parity(0))

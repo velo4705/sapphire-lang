@@ -46,4 +46,28 @@ void ImportStmt::accept(StmtVisitor& visitor) {
     visitor.visitImportStmt(*this);
 }
 
+void TraitDecl::accept(StmtVisitor& visitor) {
+    visitor.visitTraitDecl(*this);
+}
+
+void ImplBlock::accept(StmtVisitor& visitor) {
+    visitor.visitImplBlock(*this);
+}
+
+void ChannelSendStmt::accept(StmtVisitor& visitor) {
+    visitor.visitChannelSendStmt(*this);
+}
+
+void SelectStmt::accept(StmtVisitor& visitor) {
+    visitor.visitSelectStmt(*this);
+}
+
+void GoStmt::accept(StmtVisitor& visitor) {
+    visitor.visitGoStmt(*this);
+}
+
+void MacroDecl::accept(StmtVisitor& visitor) {
+    visitor.visitMacroDecl(*this);
+}
+
 } // namespace sapphire

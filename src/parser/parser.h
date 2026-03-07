@@ -36,8 +36,11 @@ private:
     // Statement parsing
     std::unique_ptr<Stmt> declaration();
     std::unique_ptr<Stmt> varDeclaration();
-    std::unique_ptr<Stmt> functionDeclaration();
-    std::unique_ptr<Stmt> classDeclaration();
+    std::unique_ptr<Stmt> functionDeclaration(std::vector<Decorator> decorators = {});
+    std::unique_ptr<Stmt> macroDeclaration();
+    std::unique_ptr<Stmt> classDeclaration(std::vector<Decorator> decorators = {});
+    std::unique_ptr<Stmt> traitDeclaration();
+    std::unique_ptr<Stmt> implBlock();
     std::unique_ptr<Stmt> importDeclaration();
     std::unique_ptr<Stmt> statement();
     std::unique_ptr<Stmt> exprStatement();
@@ -47,6 +50,8 @@ private:
     std::unique_ptr<Stmt> forStatement();
     std::unique_ptr<Stmt> tryStatement();
     std::unique_ptr<Stmt> throwStatement();
+    std::unique_ptr<Stmt> selectStatement();
+    std::unique_ptr<Stmt> goStatement();
     std::vector<std::unique_ptr<Stmt>> block();
     
     // Expression parsing
@@ -62,6 +67,15 @@ private:
     std::unique_ptr<Expr> power();
     std::unique_ptr<Expr> call();
     std::unique_ptr<Expr> primary();
+    
+    // Pattern matching
+    std::unique_ptr<Expr> matchExpression();
+    std::unique_ptr<Pattern> pattern();
+    std::unique_ptr<Pattern> arrayPattern();
+    std::unique_ptr<Pattern> objectPattern();
+    
+    // Decorators
+    std::vector<Decorator> parseDecorators();
 
 public:
     explicit Parser(const std::vector<Token>& tokens);

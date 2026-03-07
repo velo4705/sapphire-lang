@@ -1,0 +1,10 @@
+# Simple Macro Test
+# Testing macro declaration parsing
+
+print("Testing macro declaration")
+
+# Define a simple macro
+macro test_macro(x):
+    print("In macro:", x)
+
+print("Macro declared successfully!")

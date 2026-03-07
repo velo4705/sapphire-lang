@@ -1,0 +1,73 @@
+# Complete Trait System Demo
+
+print("=== Trait Definitions ===")
+
+trait Drawable:
+    fn draw(self) -> str
+    fn area(self) -> float
+
+trait Printable:
+    fn to_string(self) -> str
+
+print("✓ 2 traits defined\n")
+
+print("=== Implementing Traits ===")
+
+class Circle:
+    fn __init__(self, r):
+        self.radius = r
+
+impl Drawable for Circle:
+    fn draw(self) -> str:
+        return "Circle"
+    fn area(self) -> float:
+        return 3.14159 * self.radius * self.radius
+
+impl Printable for Circle:
+    fn to_string(self) -> str:
+        return "Circle"
+
+print("✓ Circle implements Drawable and Printable\n")
+
+class Rectangle:
+    fn __init__(self, w, h):
+        self.width = w
+        self.height = h
+
+impl Drawable for Rectangle:
+    fn draw(self) -> str:
+        return "Rectangle"
+    fn area(self) -> float:
+        return self.width * self.height
+
+impl Printable for Rectangle:
+    fn to_string(self) -> str:
+        return "Rectangle"
+
+print("✓ Rectangle implements Drawable and Printable\n")
+
+print("=== Using Trait Methods ===")
+
+let c = Circle(5.0)
+print("Circle:")
+print("  draw():", c.draw())
+print("  area():", c.area())
+print("  to_string():", c.to_string())
+
+let r = Rectangle(4.0, 6.0)
+print("\nRectangle:")
+print("  draw():", r.draw())
+print("  area():", r.area())
+print("  to_string():", r.to_string())
+
+print("\n=== Pattern Matching ===")
+
+fn classify_area(area):
+    return match area:
+        0.0 => "zero"
+        _ => "non-zero"
+
+print("\nCircle area classification:", classify_area(c.area()))
+print("Rectangle area classification:", classify_area(r.area()))
+
+print("\n✓ Milestone 2: Traits System Working!")

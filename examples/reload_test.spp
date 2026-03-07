@@ -1,0 +1,11 @@
+# Hot Reload Test File
+# This file can be modified and reloaded in the REPL
+
+fn greet(name):
+    print("Hello,", name, "!")
+
+fn calculate(x, y):
+    return x + y
+
+let version = 1
+print("Loaded version", version)

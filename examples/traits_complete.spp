@@ -1,0 +1,29 @@
+# Complete Trait Example
+
+# Define a trait
+trait Drawable:
+    fn draw(self) -> str
+    fn area(self) -> float
+
+print("Trait defined")
+
+# Define a class that implements the trait
+class Circle:
+    
+    fn __init__(self, r):
+        self.radius = r
+    
+    fn draw(self):
+        return "Circle"
+    
+    fn area(self):
+        return 3.14159 * self.radius * self.radius
+
+print("Class defined")
+
+# Create and use an instance
+let c = Circle(5.0)
+print(c.draw())
+print(c.area())
+
+print("Traits working!")

@@ -1,0 +1,18 @@
+# Trait Example
+
+trait Drawable:
+    fn draw(self) -> str
+
+print("Trait defined")
+
+class Circle:
+    fn __init__(self, r):
+        self.radius = r
+    fn draw(self):
+        return "Circle"
+
+print("Class defined")
+
+let c = Circle(5.0)
+print(c.draw())
+print("Success!")

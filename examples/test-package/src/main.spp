@@ -1,0 +1,8 @@
+fn greet(name: string) -> string:
+    return "Hello, " + name + "!"
+
+fn main():
+    print(greet("World"))
+    print(greet("Sapphire"))
+
+main()

@@ -1,0 +1,125 @@
+# Comprehensive Channel Example
+# Demonstrates various channel operations
+
+fn test_unbuffered():
+    print("=== Unbuffered Channel Test ===")
+    let ch = chan<int>()
+    print("Created unbuffered channel")
+    print(ch)
+
+fn test_buffered():
+    print("\n=== Buffered Channel Test ===")
+    let ch = chan<int>(5)
+    print("Created buffered channel with capacity 5")
+    
+    # Send multiple values
+    ch <- 10
+    ch <- 20
+    ch <- 30
+    ch <- 40
+    ch <- 50
+    print("Sent 5 values")
+    
+    # Receive all values
+    print("Receiving values:")
+    let v1 = <-ch
+    let v2 = <-ch
+    let v3 = <-ch
+    let v4 = <-ch
+    let v5 = <-ch
+    
+    print("  Value 1:", v1)
+    print("  Value 2:", v2)
+    print("  Value 3:", v3)
+    print("  Value 4:", v4)
+    print("  Value 5:", v5)
+
+fn test_with_computation():
+    print("\n=== Channel with Computation ===")
+    let ch = chan<int>(3)
+    
+    # Send computed values
+    ch <- 2 * 5
+    ch <- 3 * 7
+    ch <- 4 * 9
+    
+    # Receive and compute
+    let a = <-ch
+    let b = <-ch
+    let c = <-ch
+    
+    let sum = a + b + c
+    print("Sum of received values:", sum)
+
+fn test_string_channel():
+    print("\n=== String Channel Test ===")
+    let ch = chan<str>(3)
+    
+    ch <- "Hello"
+    ch <- "from"
+    ch <- "channels!"
+    
+    let w1 = <-ch
+    let w2 = <-ch
+    let w3 = <-ch
+    
+    print(w1, w2, w3)
+
+fn test_mixed_operations():
+    print("\n=== Mixed Operations Test ===")
+    let ch = chan<int>(10)
+    
+    # Send some values
+    ch <- 1
+    ch <- 2
+    
+    # Receive one
+    let first = <-ch
+    print("First value:", first)
+    
+    # Send more
+    ch <- 3
+    ch <- 4
+    ch <- 5
+    
+    # Receive rest
+    let second = <-ch
+    let third = <-ch
+    let fourth = <-ch
+    let fifth = <-ch
+    
+    print("Remaining values:", second, third, fourth, fifth)
+
+fn test_with_async():
+    print("\n=== Channel with Async Test ===")
+    
+    async fn produce(ch):
+        ch <- 100
+        ch <- 200
+        ch <- 300
+        return "Producer done"
+    
+    let ch = chan<int>(3)
+    let result = await produce(ch)
+    
+    print(result)
+    print("Consuming values:")
+    print("  ", <-ch)
+    print("  ", <-ch)
+    print("  ", <-ch)
+
+fn main():
+    print("╔════════════════════════════════════════╗")
+    print("║  Sapphire Channel Comprehensive Test  ║")
+    print("╚════════════════════════════════════════╝")
+    
+    test_unbuffered()
+    test_buffered()
+    test_with_computation()
+    test_string_channel()
+    test_mixed_operations()
+    test_with_async()
+    
+    print("\n✓ All channel tests completed successfully!")
+
+main()

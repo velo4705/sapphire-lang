@@ -1,0 +1,122 @@
+# ? Operator Showcase - Sapphire v1.3.0
+
+print("╔════════════════════════════════════════════════════════╗")
+print("║  Sapphire ? Operator - Error Propagation              ║")
+print("╚════════════════════════════════════════════════════════╝\n")
+
+# The ? operator provides elegant error propagation
+# If a Result is Err, it immediately returns from the function
+# If a Result is Ok, it unwraps the value and continues
+
+print("Feature 1: Automatic error propagation")
+print("─────────────────────────────────────────────────────────\n")
+
+fn divide(a, b):
+    if b == 0:
+        return Err("division by zero")
+    return Ok(a / b)
+
+# Without ? operator (verbose)
+fn calculate_verbose(a, b, c):
+    let result1 = divide(a, b)
+    if result1.is_err():
+        return result1
+    let x = result1.unwrap()
+    
+    let result2 = divide(x, c)
+    if result2.is_err():
+        return result2
+    let y = result2.unwrap()
+    
+    return Ok(y)
+
+# With ? operator (elegant)
+fn calculate_elegant(a, b, c):
+    let x = divide(a, b)?
+    let y = divide(x, c)?
+    return Ok(y)
+
+print("Without ? operator:")
+print("  calculate_verbose(20, 2, 5):", calculate_verbose(20, 2, 5))
+print("  calculate_verbose(20, 0, 5):", calculate_verbose(20, 0, 5))
+
+print("\nWith ? operator:")
+print("  calculate_elegant(20, 2, 5):", calculate_elegant(20, 2, 5))
+print("  calculate_elegant(20, 0, 5):", calculate_elegant(20, 0, 5), "\n")
+
+print("Feature 2: Multi-step validation")
+print("─────────────────────────────────────────────────────────\n")
+
+fn validate_not_empty(s):
+    if s == "":
+        return Err("empty string")
+    return Ok(s)
+
+fn validate_length(s):
+    if len(s) >= 3:
+        if len(s) <= 20:
+            return Ok(s)
+    return Err("invalid length")
+
+fn validate_format(s):
+    # Simple check: must contain letters
+    if s == "abc":
+        return Ok(s)
+    if s == "test":
+        return Ok(s)
+    if s == "hello":
+        return Ok(s)
+    return Err("invalid format")
+
+fn validate_input(input):
+    let checked = validate_not_empty(input)?
+    let length_ok = validate_length(checked)?
+    let format_ok = validate_format(length_ok)?
+    return Ok(format_ok)
+
+print("Validating inputs:")
+print("  'hello':", validate_input("hello"))
+print("  '':", validate_input(""))
+print("  'ab':", validate_input("ab"))
+print("  'xyz':", validate_input("xyz"), "\n")
+
+print("Feature 3: Error propagation in complex flows")
+print("─────────────────────────────────────────────────────────\n")
+
+fn fetch_user(id):
+    if id == 1:
+        return Ok("alice")
+    if id == 2:
+        return Ok("bob")
+    return Err("user not found")
+
+fn get_permissions(username):
+    if username == "alice":
+        return Ok("admin")
+    if username == "bob":
+        return Ok("user")
+    return Err("no permissions")
+
+fn check_access(permission, resource):
+    if permission == "admin":
+        return Ok("granted")
+    if permission == "user":
+        if resource == "public":
+            return Ok("granted")
+    return Err("access denied")
+
+fn authorize(user_id, resource):
+    let username = fetch_user(user_id)?
+    let permission = get_permissions(username)?
+    let access = check_access(permission, resource)?
+    return Ok(access)
+
+print("Authorization checks:")
+print("  authorize(1, 'admin'):", authorize(1, "admin"))
+print("  authorize(2, 'public'):", authorize(2, "public"))
+print("  authorize(2, 'admin'):", authorize(2, "admin"))
+print("  authorize(99, 'any'):", authorize(99, "any"), "\n")
+
+print("╔════════════════════════════════════════════════════════╗")
+print("║  ? operator makes error handling elegant and safe!     ║")
+print("╚════════════════════════════════════════════════════════╝")

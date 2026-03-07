@@ -1,0 +1,23 @@
+# Debug Result chaining
+
+fn safe_divide_100(x):
+    print("  safe_divide_100 called with:", x)
+    if x == 0:
+        return Err("division by zero")
+    let result = 100 / x
+    print("  returning Ok(", result, ")")
+    return Ok(result)
+
+fn validate_positive(x):
+    print("  validate_positive called with:", x)
+    if x <= 0:
+        return Err("not positive")
+    return Ok(x)
+
+print("Calling safe_divide_100(10):")
+let r1 = safe_divide_100(10)
+print("Got:", r1)
+
+print("\nCalling r1.and_then(validate_positive):")
+let r2 = r1.and_then(validate_positive)
+print("Got:", r2)

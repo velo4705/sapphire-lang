@@ -1,0 +1,81 @@
+# Option Type Test - Milestone 5 Phase 1
+
+# Basic Option construction
+let some_value = Some(42)
+let no_value = None()
+
+print("some_value:", some_value)
+print("no_value:", no_value)
+
+# is_some and is_none methods
+print("\nChecking Option state:")
+print("some_value.is_some():", some_value.is_some())
+print("some_value.is_none():", some_value.is_none())
+print("no_value.is_some():", no_value.is_some())
+print("no_value.is_none():", no_value.is_none())
+
+# unwrap and unwrap_or methods
+print("\nUnwrapping values:")
+print("some_value.unwrap():", some_value.unwrap())
+print("no_value.unwrap_or(0):", no_value.unwrap_or(0))
+print("some_value.unwrap_or(999):", some_value.unwrap_or(999))
+
+# Pattern matching with Option
+print("\nPattern matching:")
+match some_value:
+    Some(x) => print("Got Some with value:", x)
+    None => print("Got None")
+
+match no_value:
+    Some(x) => print("Got Some with value:", x)
+    None => print("Got None")
+
+# map method
+print("\nUsing map:")
+let doubled = some_value.map(fn(x) { return x * 2 })
+print("some_value.map(x * 2):", doubled)
+
+let none_mapped = no_value.map(fn(x) { return x * 2 })
+print("no_value.map(x * 2):", none_mapped)
+
+# and_then method (flatMap)
+print("\nUsing and_then:")
+fn safe_divide(x):
+    if x == 0:
+        return None()
+    return Some(100 / x)
+
+let result1 = Some(10).and_then(safe_divide)
+print("Some(10).and_then(safe_divide):", result1)
+
+let result2 = Some(0).and_then(safe_divide)
+print("Some(0).and_then(safe_divide):", result2)
+
+let result3 = None().and_then(safe_divide)
+print("None().and_then(safe_divide):", result3)
+
+# Practical example: find user by ID
+fn find_user(id):
+    if id == 1:
+        return Some("Alice")
+    if id == 2:
+        return Some("Bob")
+    return None()
+
+print("\nPractical example - find_user:")
+let user1 = find_user(1)
+match user1:
+    Some(name) => print("Found user:", name)
+    None => print("User not found")
+
+let user99 = find_user(99)
+match user99:
+    Some(name) => print("Found user:", name)
+    None => print("User not found")
+
+# Chaining operations
+print("\nChaining operations:")
+let user_upper = find_user(2).map(fn(name) { return name })
+print("find_user(2).map(uppercase):", user_upper)
+
+print("\nOption type test complete!")

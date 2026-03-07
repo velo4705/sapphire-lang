@@ -1,0 +1,13 @@
+# Test multiple arms without guards
+
+fn classify(n):
+    return match n:
+        0 => "zero"
+        1 => "one"
+        2 => "two"
+        _ => "other"
+
+print(classify(0))
+print(classify(1))
+print(classify(2))
+print(classify(5))

@@ -1,0 +1,86 @@
+# Command-Line Tool in Sapphire
+
+# NOTE: This is a FUTURE VISION example
+# Current parser doesn't support all these features yet
+# For working examples, see: hello.spp, simple.spp, showcase.spp
+
+
+import cli::{Command, Arg, Flag}
+import fs::{File, Directory}
+import term::{color, progress}
+
+# ============ CLI Application ============
+@command(name="sapp", version="1.0.0")
+class App:
+    @arg(help="Input file path")
+    
+    @flag(short="o", long="output", help="Output file path")
+    
+    @flag(short="v", long="verbose", help="Verbose output")
+    
+    @flag(short="f", long="format", help="Output format", choices=["json", "yaml", "toml"])
+    
+    fn run(self) -> Result<(), Error>:
+        if self.verbose:
+            print(f"Processing {self.input}...")
+        
+        let content = File.read(self.input)?
+        let processed = self.process(content)
+        
+        match self.output:
+            Some(path):
+                File.write(path, processed)?
+                print(f"Output written to {path}")
+            None:
+                print(processed)
+        
+        return Ok(())
+    
+    fn process(self, content: str) -> str:
+        # Process content based on format
+        match self.format:
+            "json":
+                return json.dumps(parse(content), indent=2)
+            "yaml":
+                return yaml.dumps(parse(content))
+            "toml":
+                return toml.dumps(parse(content))
+
+# ============ Subcommands ============
+@command
+class FileManager:
+    @subcommand
+    fn list(self, path: str = "."):
+        """List files in directory"""
+        let dir = Directory.open(path)?
+        
+        for entry in dir.entries():
+            let icon = "📁" if entry.is_dir() else "📄"
+            let size = format_size(entry.size())
+            print(f"{icon} {entry.name:<30} {size:>10}")
+    
+    @subcommand
+    fn search(self, pattern: str, path: str = "."):
+        """Search for files matching pattern"""
+        let matches = Directory.walk(path)
+            .filter(lambda f: f.name.contains(pattern))
+        
+        print(f"Found {len(matches)} matches:")
+        for file in matches:
+            print(f"  {file.path}")
+    
+    @subcommand
+    async fn download(self, url: str, output: str?):
+        """Download file from URL"""
+        let filename = output ?? url.split("/")[-1]
+        
+        print(f"Downloading {url}...")
+        let pb = progress.ProgressBar(total=100)
+        
+        let response = await http.get(url, on_progress=lambda p: pb.update(p))
+        File.write(filename, response.body)?
+        
+        print(f"✓ Downloaded to {filename}")
+
+fn main():
+    App.parse_and_run()

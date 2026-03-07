@@ -150,9 +150,21 @@ void Lexer::scanToken() {
         case '[': tokens.push_back(makeToken(TokenType::LBRACKET, "[")); break;
         case ']': tokens.push_back(makeToken(TokenType::RBRACKET, "]")); break;
         case ',': tokens.push_back(makeToken(TokenType::COMMA, ",")); break;
-        case '.': tokens.push_back(makeToken(TokenType::DOT, ".")); break;
+        case '.':
+            if (match('.')) {
+                if (match('.')) {
+                    tokens.push_back(makeToken(TokenType::TRIPLE_DOT, "..."));
+                } else {
+                    tokens.push_back(makeToken(TokenType::DOUBLE_DOT, ".."));
+                }
+            } else {
+                tokens.push_back(makeToken(TokenType::DOT, "."));
+            }
+            break;
         case '?': tokens.push_back(makeToken(TokenType::QUESTION, "?")); break;
+        case '@': tokens.push_back(makeToken(TokenType::AT, "@")); break;
         case ':': tokens.push_back(makeToken(TokenType::COLON, ":")); break;
+        case '|': tokens.push_back(makeToken(TokenType::PIPE, "|")); break;
         
         case '+':
             if (match('=')) {
@@ -186,6 +198,8 @@ void Lexer::scanToken() {
         case '=':
             if (match('=')) {
                 tokens.push_back(makeToken(TokenType::EQUAL_EQUAL, "=="));
+            } else if (match('>')) {
+                tokens.push_back(makeToken(TokenType::ARROW, "=>"));
             } else {
                 tokens.push_back(makeToken(TokenType::EQUAL, "="));
             }
@@ -202,6 +216,8 @@ void Lexer::scanToken() {
         case '<':
             if (match('=')) {
                 tokens.push_back(makeToken(TokenType::LESS_EQUAL, "<="));
+            } else if (match('-')) {
+                tokens.push_back(makeToken(TokenType::CHANNEL_SEND, "<-"));
             } else {
                 tokens.push_back(makeToken(TokenType::LESS, "<"));
             }

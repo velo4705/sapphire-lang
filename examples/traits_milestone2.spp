@@ -1,0 +1,72 @@
+# Milestone 2: Traits & Type System Demo
+# Shows what's currently working
+
+print("=== Trait Definitions ===")
+
+trait Drawable:
+    fn draw(self) -> str
+    fn area(self) -> float
+
+trait Comparable:
+    fn compare(self, other) -> int
+
+trait Printable:
+    fn to_string(self) -> str
+
+print("✓ Traits defined successfully")
+
+print("\n=== Impl Blocks ===")
+
+impl Drawable for Circle:
+    fn draw(self) -> str:
+        return "Circle"
+    fn area(self) -> float:
+        return 3.14
+
+impl Printable for Point:
+    fn to_string(self) -> str:
+        return "Point"
+
+print("✓ Impl blocks registered")
+
+print("\n=== Classes with Methods ===")
+
+class Circle:
+    fn __init__(self, r):
+        self.radius = r
+    fn draw(self):
+        return "Circle"
+    fn area(self):
+        return 3.14159 * self.radius * self.radius
+
+class Point:
+    fn __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+print("✓ Classes defined")
+
+print("\n=== Using Classes ===")
+
+let c = Circle(5.0)
+print("Circle draw:", c.draw())
+print("Circle area:", c.area())
+
+let p = Point(3, 4)
+print("Point created")
+
+print("\n=== Pattern Matching ===")
+
+fn classify(n):
+    return match n:
+        0 => "zero"
+        1 => "one"
+        2 => "two"
+        _ => "other"
+
+print("classify(0):", classify(0))
+print("classify(1):", classify(1))
+print("classify(5):", classify(5))
+
+print("\n✓ Milestone 2 Foundation Complete!")
+print("Next: Implement trait method dispatch")
