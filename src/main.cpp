@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
     std::string arg = argv[1];
     
     if (arg == "--version") {
-        std::cout << "Sapphire v1.0.0 (Production Release)\n";
+        std::cout << "Sapphire v1.0-beta.4 (Web Development Foundation)\n";
         return 0;
     }
     

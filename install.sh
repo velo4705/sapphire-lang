@@ -6,7 +6,7 @@ set -e
 
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║         Sapphire Programming Language Installer              ║"
-echo "║                    Version 1.0.0                              ║"
+echo "║                    Version 1.0-beta.4                        ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
