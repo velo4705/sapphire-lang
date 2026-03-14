@@ -40,12 +40,18 @@ echo "Building additional tools..."
 make spm 2>/dev/null && echo "  ✓ spm built" || echo "  ⚠ spm build skipped"
 make sapphire-fmt 2>/dev/null && echo "  ✓ sapphire-fmt built" || echo "  ⚠ sapphire-fmt build skipped"
 
-# Install to system (optional)
+# Install to system (recommended)
 echo ""
-read -p "Install to /usr/local/bin? (y/N): " install_system
+echo "Choose installation method:"
+echo "1) System-wide install (recommended) - requires sudo"
+echo "2) User install - adds to your PATH permanently"
+echo "3) Local only - run with ./sapp"
+echo ""
+read -p "Choose option (1/2/3) [1]: " install_choice
+install_choice=${install_choice:-1}
 
-if [[ $install_system =~ ^[Yy]$ ]]; then
-    echo "Installing..."
+if [[ $install_choice == "1" ]]; then
+    echo "Installing system-wide..."
     sudo cp sapp /usr/local/bin/
     sudo cp sapphire /usr/local/bin/
     
@@ -58,12 +64,44 @@ if [[ $install_system =~ ^[Yy]$ ]]; then
     fi
     
     echo "✓ Installed to /usr/local/bin"
-    echo ""
     echo "You can now run 'sapp' from anywhere!"
+    
+elif [[ $install_choice == "2" ]]; then
+    echo "Setting up user installation..."
+    SAPPHIRE_DIR="$(pwd)"
+    
+    # Detect shell and add to appropriate config file
+    if [[ $SHELL == *"zsh"* ]]; then
+        SHELL_CONFIG="$HOME/.zshrc"
+    elif [[ $SHELL == *"bash"* ]]; then
+        SHELL_CONFIG="$HOME/.bashrc"
+    else
+        SHELL_CONFIG="$HOME/.profile"
+    fi
+    
+    # Add PATH export to shell config if not already present
+    if ! grep -q "sapphire-lang" "$SHELL_CONFIG" 2>/dev/null; then
+        echo "" >> "$SHELL_CONFIG"
+        echo "# Sapphire Programming Language" >> "$SHELL_CONFIG"
+        echo "export PATH=\"\$PATH:$SAPPHIRE_DIR\"" >> "$SHELL_CONFIG"
+        echo "✓ Added Sapphire to PATH in $SHELL_CONFIG"
+        echo ""
+        echo "To use immediately, run: source $SHELL_CONFIG"
+        echo "Or open a new terminal session"
+    else
+        echo "✓ Sapphire already in PATH"
+    fi
+    
+    # Also export for current session
+    export PATH="$PATH:$SAPPHIRE_DIR"
+    echo "✓ Sapphire available in current session"
+    
 else
+    echo "Local installation - use ./sapp to run"
     echo ""
-    echo "To use Sapphire, run: ./sapp"
-    echo "Or add to PATH: export PATH=\"\$PATH:$(pwd)\""
+    echo "To make it globally available later:"
+    echo "  Option 1: sudo cp sapp /usr/local/bin/"
+    echo "  Option 2: Add to PATH: echo 'export PATH=\"\$PATH:$(pwd)\"' >> ~/.bashrc"
 fi
 
 # Test
@@ -76,10 +114,14 @@ echo "╔═══════════════════════�
 echo "║  ✓ Sapphire installed successfully!                          ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
-echo "Try it out:"
-echo "  ./sapp examples/hello.spp"
-echo ""
-echo "Update anytime:"
-echo "  sapp --update"
+echo "Quick start:"
+if [[ $install_choice == "1" ]]; then
+    echo "  sapp examples/hello.spp"
+elif [[ $install_choice == "2" ]]; then
+    echo "  sapp examples/hello.spp  (after: source $SHELL_CONFIG)"
+else
+    echo "  ./sapp examples/hello.spp"
+fi
 echo ""
 echo "Documentation: https://github.com/velo4705/sapphire-lang"
+echo "Update anytime: Re-run this installer"
