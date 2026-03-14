@@ -1,17 +1,17 @@
-// Milestone 4: WebSocket Test - Core Functionality
+# Milestone 4: WebSocket Test - Core Functionality
 print("=== WebSocket Core Test ===")
 
-// Test WebSocket Server Creation
+# Test WebSocket Server Creation
 print("Testing WebSocket Server...")
 server = websocket_server_create(8080)
 print("✓ Server created")
 
-// Test WebSocket Client Creation  
+# Test WebSocket Client Creation  
 print("Testing WebSocket Client...")
 client = websocket_client_create()
 print("✓ Client created")
 
-// Test Base64 Utilities
+# Test Base64 Utilities
 print("Testing Base64 encoding...")
 test_data = "WebSocket Test Data"
 encoded = websocket_base64_encode(test_data)
@@ -23,7 +23,7 @@ print(encoded)
 print("Decoded:")
 print(decoded)
 
-// Verify encoding/decoding works
+# Verify encoding/decoding works
 print("Base64 test result:")
 print(test_data == decoded)
 
