@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <unistd.h>
 #include "lexer/lexer.h"
 #include "parser/parser.h"
 #include "interpreter/interpreter.h"
@@ -30,43 +31,116 @@ void printUsage(const char* program) {
 
 void checkForUpdates() {
     std::cout << "Checking for updates...\n";
-    
-    // Read current version
+
+    // Read current version from the binary's directory
     std::string current_version = "1.0-beta.7";
-    std::ifstream version_file("VERSION");
-    if (version_file.is_open()) {
-        std::getline(version_file, current_version);
-        version_file.close();
+    char exe_path[4096] = {};
+    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+    if (len > 0) {
+        exe_path[len] = '\0';
+        std::string dir(exe_path);
+        dir = dir.substr(0, dir.rfind('/'));
+        std::ifstream vf(dir + "/VERSION");
+        if (vf.is_open()) { std::getline(vf, current_version); vf.close(); }
     }
-    
+    // trim whitespace
+    while (!current_version.empty() && (current_version.back() == '\n' || current_version.back() == '\r' || current_version.back() == ' '))
+        current_version.pop_back();
+
     std::cout << "Current version: v" << current_version << "\n";
-    std::cout << "Latest version: Check https://github.com/velo4705/sapphire-lang/releases\n";
-    std::cout << "\nTo update to the latest version, run:\n";
-    std::cout << "  sapp --update\n";
-    std::cout << "\nOr manually:\n";
-    std::cout << "  curl -fsSL https://raw.githubusercontent.com/velo4705/sapphire-lang/main/install.sh | bash\n";
+
+    // Fetch latest VERSION from GitHub
+    std::string latest_version;
+    FILE* pipe = popen("curl -fsSL --max-time 5 https://raw.githubusercontent.com/velo4705/sapphire-lang/main/VERSION 2>/dev/null", "r");
+    if (pipe) {
+        char buf[64] = {};
+        if (fgets(buf, sizeof(buf), pipe)) {
+            latest_version = buf;
+            while (!latest_version.empty() && (latest_version.back() == '\n' || latest_version.back() == '\r' || latest_version.back() == ' '))
+                latest_version.pop_back();
+        }
+        pclose(pipe);
+    }
+
+    if (latest_version.empty()) {
+        std::cout << "Could not reach GitHub. Check your internet connection.\n";
+        std::cout << "Latest release: https://github.com/velo4705/sapphire-lang/releases\n";
+        return;
+    }
+
+    std::cout << "Latest version:  v" << latest_version << "\n\n";
+
+    if (current_version == latest_version) {
+        std::cout << "✓ You are already on the latest version.\n";
+    } else {
+        std::cout << "↑ Update available: v" << current_version << " → v" << latest_version << "\n";
+        std::cout << "\nTo update, run:\n";
+        std::cout << "  sapp --update\n";
+        std::cout << "\nOr manually:\n";
+        std::cout << "  curl -fsSL https://raw.githubusercontent.com/velo4705/sapphire-lang/main/install.sh | bash\n";
+    }
 }
 
 void updateSapphire() {
     std::cout << "╔══════════════════════════════════════════════════════════════╗\n";
     std::cout << "║         Updating Sapphire...                                  ║\n";
     std::cout << "╚══════════════════════════════════════════════════════════════╝\n\n";
-    
-    std::cout << "Downloading latest installer...\n";
-    
-    // Download and run the latest installer script
-    // This works regardless of how Sapphire was originally installed
-    int result = system("curl -fsSL https://raw.githubusercontent.com/velo4705/sapphire-lang/main/install.sh | bash");
-    
-    if (result == 0) {
-        std::cout << "\n╔══════════════════════════════════════════════════════════════╗\n";
-        std::cout << "║  ✓ Sapphire updated successfully!                            ║\n";
-        std::cout << "╚══════════════════════════════════════════════════════════════╝\n";
-        std::cout << "\nRun: sapp --version\n";
+
+    // Find the directory this binary lives in — that's the repo root
+    // Try /proc/self/exe first (Linux), fall back to argv[0]
+    char exe_path[4096] = {};
+    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+    std::string repo_dir;
+    if (len > 0) {
+        exe_path[len] = '\0';
+        std::string p(exe_path);
+        repo_dir = p.substr(0, p.rfind('/'));
+    }
+
+    // Check if this looks like a git repo
+    bool is_git = false;
+    if (!repo_dir.empty()) {
+        std::string check = "test -d \"" + repo_dir + "/.git\"";
+        is_git = (system(check.c_str()) == 0);
+    }
+
+    if (is_git) {
+        std::cout << "Found git repo at: " << repo_dir << "\n";
+        std::cout << "Pulling latest changes...\n\n";
+
+        std::string pull_cmd  = "git -C \"" + repo_dir + "\" pull origin main";
+        std::string build_cmd = "make -C \"" + repo_dir + "\" quick";
+
+        int pull_result = system(pull_cmd.c_str());
+        if (pull_result != 0) {
+            std::cout << "✗ git pull failed. Check your internet connection or repo state.\n";
+            std::cout << "  Try: git -C " << repo_dir << " pull origin main\n";
+            return;
+        }
+
+        std::cout << "\nRebuilding...\n\n";
+        int build_result = system(build_cmd.c_str());
+        if (build_result == 0) {
+            std::cout << "\n╔══════════════════════════════════════════════════════════════╗\n";
+            std::cout << "║  ✓ Sapphire updated successfully!                            ║\n";
+            std::cout << "╚══════════════════════════════════════════════════════════════╝\n";
+            std::cout << "\nRun: sapp --version\n";
+        } else {
+            std::cout << "✗ Build failed after pull. Try: make -C " << repo_dir << " quick\n";
+        }
     } else {
-        std::cout << "✗ Update failed. Please check your internet connection.\n";
-        std::cout << "\nTry manually:\n";
-        std::cout << "  curl -fsSL https://raw.githubusercontent.com/velo4705/sapphire-lang/main/install.sh | bash\n";
+        // Not a git repo — fall back to the curl installer
+        std::cout << "Not a git installation. Downloading latest installer...\n\n";
+        int result = system("curl -fsSL https://raw.githubusercontent.com/velo4705/sapphire-lang/main/install.sh | bash");
+        if (result == 0) {
+            std::cout << "\n╔══════════════════════════════════════════════════════════════╗\n";
+            std::cout << "║  ✓ Sapphire updated successfully!                            ║\n";
+            std::cout << "╚══════════════════════════════════════════════════════════════╝\n";
+            std::cout << "\nRun: sapp --version\n";
+        } else {
+            std::cout << "✗ Update failed. Try manually:\n";
+            std::cout << "  curl -fsSL https://raw.githubusercontent.com/velo4705/sapphire-lang/main/install.sh | bash\n";
+        }
     }
 }
 
