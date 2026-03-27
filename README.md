@@ -15,6 +15,8 @@ fn main() {
 **Safe.** Memory safety without garbage collection overhead.  
 **Simple.** Clean syntax that feels natural.
 
+**Website**: https://velo4705.github.io/sapphire-lang
+
 ---
 
 ## Quick Start
