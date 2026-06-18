@@ -72,6 +72,7 @@ editors/*/.vscode/settings.json
 # Documentation build
 docs/_build/
 site/
+docs/sitemap.xml
 
 # Temporary files
 tmp/
@@ -169,3 +170,5 @@ test_all_examples.sh
 
 # VSCode extension package (binary artifact, built on demand)
 *.vsix
+
+CONTEXT_TRANSFER.md

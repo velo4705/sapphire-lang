@@ -202,6 +202,26 @@
     height: 100% !important;
 }
 
+/* Status bar */
+.status-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.35rem 1rem;
+    background: var(--dark);
+    border-top: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.shortcut-hint {
+    font-size: 0.7rem;
+    font-weight: 400;
+    opacity: 0.7;
+    margin-left: 0.4rem;
+}
+
 .CodeMirror-gutters {
     background: #151a28 !important;
     border-right: 1px solid var(--border) !important;

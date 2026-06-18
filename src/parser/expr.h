@@ -458,6 +458,52 @@ public:
     }
 };
 
+// Move expression: move expr
+class MoveExpr : public Expr {
+public:
+    std::unique_ptr<Expr> operand;
+    
+    explicit MoveExpr(std::unique_ptr<Expr> op)
+        : operand(std::move(op)) {}
+    
+    void accept(ExprVisitor& visitor) override;
+    
+    std::unique_ptr<Expr> clone() const override {
+        return std::make_unique<MoveExpr>(
+            operand ? operand->clone() : nullptr
+        );
+    }
+};
+
+
+// F-string segment: either a literal string or an expression
+struct FStringSegment {
+    bool is_expr;
+    std::string text;           // Literal text (when is_expr=false)
+    std::unique_ptr<Expr> expr; // Expression (when is_expr=true)
+    
+    FStringSegment(const std::string& t) : is_expr(false), text(t) {}
+    FStringSegment(std::unique_ptr<Expr> e) : is_expr(true), expr(std::move(e)) {}
+    
+    FStringSegment(FStringSegment&&) = default;
+    FStringSegment& operator=(FStringSegment&&) = default;
+};
+
+// F-string expression: f"hello {name} you are {age}"
+class FStringExpr : public Expr {
+public:
+    std::vector<FStringSegment> segments;
+    
+    explicit FStringExpr(std::vector<FStringSegment> segs)
+        : segments(std::move(segs)) {}
+    
+    void accept(ExprVisitor& visitor) override;
+    
+    std::unique_ptr<Expr> clone() const override {
+        (void)0;  // Not easily cloneable
+        return nullptr;
+    }
+};
 
 // Visitor interface
 class ExprVisitor {
@@ -481,6 +527,8 @@ public:
     virtual void visitChannelReceiveExpr(ChannelReceiveExpr& expr) = 0;
     virtual void visitTryExpr(TryExpr& expr) = 0;
     virtual void visitStringifyExpr(StringifyExpr& expr) = 0;
+    virtual void visitMoveExpr(MoveExpr& expr) = 0;
+    virtual void visitFStringExpr(FStringExpr& expr) = 0;
 };
 
 } // namespace sapphire

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(Sapphire VERSION 1.0.0-beta.7 LANGUAGES CXX)
+project(Sapphire VERSION 1.0.0-beta.8 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

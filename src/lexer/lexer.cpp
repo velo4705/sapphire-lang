@@ -209,7 +209,7 @@ void Lexer::scanToken() {
             if (match('=')) {
                 tokens.push_back(makeToken(TokenType::NOT_EQUAL, "!="));
             } else {
-                tokens.push_back(makeToken(TokenType::INVALID, "!"));
+                tokens.push_back(makeToken(TokenType::EXCLAMATION, "!"));
             }
             break;
         
@@ -241,8 +241,14 @@ void Lexer::scanToken() {
                 current = start;
                 scanNumber();
             } else if (std::isalpha(c) || c == '_') {
-                current = start;
-                scanIdentifier();
+                // Check for f-string: f"..." or f'...'
+                if (c == 'f' && !isAtEnd() && (source[current] == '"' || source[current] == '\'')) {
+                    char quote = advance(); // consume the quote
+                    scanFString(quote);
+                } else {
+                    current = start;
+                    scanIdentifier();
+                }
             } else {
                 tokens.push_back(makeToken(TokenType::INVALID, std::string(1, c)));
             }
@@ -322,6 +328,66 @@ void Lexer::scanString(char quote) {
     
     advance(); // closing quote
     tokens.push_back(makeToken(TokenType::STRING, value));
+}
+
+void Lexer::scanFString(char quote) {
+    // Scan f"..." or f'...' - store raw content with braces for interpolation
+    // We store raw content and parse expressions later in the parser
+    size_t start = current;
+    std::string raw_content;
+    int brace_depth = 0;
+    
+    while (!isAtEnd()) {
+        char c = peek();
+        
+        if (c == quote && brace_depth == 0) {
+            // End of f-string
+            advance(); // consume closing quote
+            tokens.push_back(makeToken(TokenType::FSTRING, raw_content));
+            return;
+        }
+        
+        if (c == '{') {
+            if (peekNext() == '{') {
+                // Escaped brace {{ -> literal {
+                raw_content += '{';
+                advance(); advance(); // consume both {
+                continue;
+            }
+            brace_depth++;
+            raw_content += advance();
+        } else if (c == '}') {
+            if (peekNext() == '}') {
+                // Escaped brace }} -> literal }
+                raw_content += '}';
+                advance(); advance(); // consume both }
+                continue;
+            }
+            if (brace_depth > 0) {
+                brace_depth--;
+            }
+            raw_content += advance();
+        } else if (c == '\\') {
+            advance(); // consume backslash
+            if (!isAtEnd()) {
+                char escaped = advance();
+                switch (escaped) {
+                    case 'n': raw_content += '\n'; break;
+                    case 't': raw_content += '\t'; break;
+                    case 'r': raw_content += '\r'; break;
+                    case '\\': raw_content += '\\'; break;
+                    case '"': raw_content += '"'; break;
+                    case '\'': raw_content += '\''; break;
+                    default: raw_content += escaped; break;
+                }
+            }
+        } else {
+            raw_content += advance();
+        }
+    }
+    
+    // Unterminated f-string
+    tokens.push_back(makeToken(TokenType::INVALID, "Unterminated f-string"));
 }
 
 void Lexer::scanIdentifier() {

@@ -1,6 +1,7 @@
 #include "repl.h"
 #include "../lexer/lexer.h"
 #include "../parser/parser.h"
+#include "../error/error_reporter.h"
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -170,6 +171,26 @@ void REPL::executeCode(const std::string& code) {
             }
         }
         
+    } catch (const SapphireException& e) {
+        // Print the full error with stack trace
+        std::string code;
+        const std::string& t = e.getTypeName();
+        if      (t == "IndexError")          code = "E4A0";
+        else if (t == "DivisionByZeroError") code = "E4A1";
+        else if (t == "ValueError")          code = "E7A0";
+        else if (t == "TypeError")           code = "E3A0";
+        
+        ErrorFormatter::print(code, e.getMessage(), "", -1, -1, "", "");
+        
+        auto stack = e.getStackTrace();
+        if (!stack.empty()) {
+            std::cerr << C_BLUE << "  = " << C_RESET
+                      << C_BOLD << "stack trace:" << C_RESET << "\n";
+            for (const auto& frame : stack) {
+                std::cerr << "       " << frame.toString() << "\n";
+            }
+            std::cerr << "\n";
+        }
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
     }
@@ -177,7 +198,7 @@ void REPL::executeCode(const std::string& code) {
 
 void REPL::printWelcome() {
     std::cout << "╔══════════════════════════════════════════════════════════════╗\n";
-    std::cout << "║         Sapphire REPL v1.0-beta.7                          ║\n";
+    std::cout << "║         Sapphire REPL v1.0-beta.8                          ║\n";
     std::cout << "║         Interactive Programming Environment                   ║\n";
     std::cout << "╚══════════════════════════════════════════════════════════════╝\n";
     std::cout << "\n";
@@ -418,14 +439,54 @@ std::string REPL::readLine(const std::string& prompt) {
 
     if (is_tty) tcsetattr(fileno(stdin), TCSAFLUSH, &old_term);
 
-    // Multi-line: if line ends with ':' or '\', keep reading with continuation prompt
-    if (!line.empty() && (line.back() == ':' || line.back() == '\\')) {
+    // Multi-line: if line ends with ':' (function/class/if/while/for/try/etc.)
+    // or '\', keep reading with continuation prompt
+    bool ends_with_colon = !line.empty() && line.back() == ':';
+    bool ends_with_backslash = !line.empty() && line.back() == '\\';
+    
+    if (ends_with_colon || ends_with_backslash) {
         std::string full = line;
-        while (true) {
-            std::string cont = readLine("...       ");
-            if (cont.empty()) break;
-            full += "\n" + cont;
-            if (!cont.empty() && cont.back() != ':' && cont.back() != '\\') break;
+        
+        if (ends_with_backslash) {
+            // Simple continuation: read next line, replace the backslash
+            while (true) {
+                std::string cont = readLine("...       ");
+                if (cont.empty()) break;
+                full.pop_back();  // Remove the trailing '\'
+                full += "\n" + cont;
+                if (cont.empty() || cont.back() != '\\') break;
+            }
+        } else {
+            // Indentation-based multiline: read until dedent
+            // After a line ending with ':', read indented body lines
+            int first_indent = -1;
+            while (true) {
+                std::string cont = readLine("...       ");
+                if (cont.empty()) break;
+                
+                // Count leading spaces
+                int spaces = 0;
+                for (char c : cont) {
+                    if (c == ' ') spaces++;
+                    else break;
+                }
+                
+                // If this is the first body line, record the indent level
+                if (first_indent < 0) {
+                    if (spaces == 0 && !cont.empty()) {
+                        // No indentation after ':' - probably a new statement
+                        full += "\n" + cont;
+                        break;
+                    }
+                    first_indent = spaces;
+                } else if (spaces < first_indent && !cont.empty()) {
+                    // Dedent detected - line belongs to outer scope
+                    // Put it back by not adding a newline separator
+                    break;
+                }
+                
+                full += "\n" + cont;
+            }
         }
         return full;
     }

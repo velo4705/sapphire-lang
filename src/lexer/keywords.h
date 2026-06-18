@@ -50,7 +50,14 @@ static const std::map<std::string, TokenType> KEYWORDS = {
     {"select", TokenType::SELECT},
     {"case", TokenType::CASE},
     {"default", TokenType::DEFAULT},
-    {"macro", TokenType::MACRO}
+    {"macro", TokenType::MACRO},
+    {"extend", TokenType::EXTEND},
+    {"unsafe", TokenType::UNSAFE},
+    {"move", TokenType::MOVE},
+    {"own", TokenType::OWN},
+    {"borrow", TokenType::BORROW},
+    {"mut", TokenType::MUT},
+
 };
 
 } // namespace sapphire

@@ -15,13 +15,13 @@ static inline bool use_color() {
     if (cached < 0) cached = isatty(fileno(stderr)) ? 1 : 0;
     return cached == 1;
 }
-#define C_RESET  (use_color() ? "\033[0m"     : "")
-#define C_BOLD   (use_color() ? "\033[1m"     : "")
-#define C_RED    (use_color() ? "\033[1;31m"  : "")
-#define C_YELLOW (use_color() ? "\033[1;33m"  : "")
-#define C_CYAN   (use_color() ? "\033[1;36m"  : "")
-#define C_BLUE   (use_color() ? "\033[1;34m"  : "")
-#define C_DIM    (use_color() ? "\033[2m"     : "")
+#define C_RESET  (sapphire::use_color() ? "\033[0m"     : "")
+#define C_BOLD   (sapphire::use_color() ? "\033[1m"     : "")
+#define C_RED    (sapphire::use_color() ? "\033[1;31m"  : "")
+#define C_YELLOW (sapphire::use_color() ? "\033[1;33m"  : "")
+#define C_CYAN   (sapphire::use_color() ? "\033[1;36m"  : "")
+#define C_BLUE   (sapphire::use_color() ? "\033[1;34m"  : "")
+#define C_DIM    (sapphire::use_color() ? "\033[2m"     : "")
 
 // ── Split source into lines ────────────────────────────────────────────────
 static inline std::vector<std::string> split_lines(const std::string& src) {

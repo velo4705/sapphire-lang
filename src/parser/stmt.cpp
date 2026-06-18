@@ -70,4 +70,20 @@ void MacroDecl::accept(StmtVisitor& visitor) {
     visitor.visitMacroDecl(*this);
 }
 
+void BreakStmt::accept(StmtVisitor& visitor) {
+    visitor.visitBreakStmt(*this);
+}
+
+void ContinueStmt::accept(StmtVisitor& visitor) {
+    visitor.visitContinueStmt(*this);
+}
+
+void UnsafeStmt::accept(StmtVisitor& visitor) {
+    visitor.visitUnsafeStmt(*this);
+}
+
+void ExtendDecl::accept(StmtVisitor& visitor) {
+    visitor.visitExtendDecl(*this);
+}
+
 } // namespace sapphire

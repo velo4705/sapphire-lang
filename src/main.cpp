@@ -2,7 +2,10 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <thread>
+#include <chrono>
 #include <unistd.h>
+#include <sys/stat.h>
 #include "lexer/lexer.h"
 #include "parser/parser.h"
 #include "interpreter/interpreter.h"
@@ -11,6 +14,7 @@
 #include "codegen/llvm_codegen.h"
 #include "codegen/llvm_codegen.h"
 #include "repl/repl.h"
+#include "formatter/formatter.h"
 #include "error/exception.h"
 #include "error/error_codes.h"
 #include "error/error_reporter.h"
@@ -23,6 +27,8 @@ void printUsage(const char* program) {
     std::cout << "  sapp                         # Start interactive REPL\n";
     std::cout << "  sapp <file.spp>              # Run a program (interpreter)\n";
     std::cout << "  sapp compile <file.spp>      # Compile and show LLVM IR\n";
+    std::cout << "  sapp new <project>           # Scaffold a new project\n";
+    std::cout << "  sapp --fmt <file.spp>        # Format code in-place\n";
     std::cout << "  sapp --version               # Show version\n";
     std::cout << "  sapp --update                # Update to latest version\n";
     std::cout << "  sapp --help                  # Show this help\n";
@@ -33,7 +39,7 @@ void checkForUpdates() {
     std::cout << "Checking for updates...\n";
 
     // Read current version from the binary's directory
-    std::string current_version = "1.0-beta.7";
+    std::string current_version = "1.0-beta.8";
     char exe_path[4096] = {};
     ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
     if (len > 0) {
@@ -155,7 +161,7 @@ int main(int argc, char* argv[]) {
     std::string arg = argv[1];
     
     if (arg == "--version") {
-        std::cout << "Sapphire v1.0-beta.7\n";
+        std::cout << "Sapphire v1.0-beta.8\n";
         return 0;
     }
     
@@ -174,6 +180,58 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    // sapp new project-name  →  scaffold a new project
+    if (arg == "new") {
+        if (argc < 3) {
+            std::cerr << "Usage: sapp new <project-name>\n";
+            return 1;
+        }
+        std::string project_name = argv[2];
+        std::string dir = project_name;
+        
+        // Create project directory
+        if (mkdir(dir.c_str(), 0755) != 0) {
+            std::cerr << "Error: could not create directory '" << dir << "'\n";
+            return 1;
+        }
+        
+        // Create main.spp
+        std::ofstream main_file(dir + "/main.spp");
+        main_file << "// " << project_name << "\n";
+        main_file << "// A Sapphire program\n\n";
+        main_file << "fn main():\n";
+        main_file << "    print(\"Hello from " << project_name << "!\")\n";
+        main_file.close();
+        
+        // Create README.md
+        std::ofstream readme_file(dir + "/README.md");
+        readme_file << "# " << project_name << "\n\n";
+        readme_file << "A Sapphire project.\n";
+        readme_file.close();
+        
+        std::cout << "Created project '" << project_name << "'\n";
+        std::cout << "  " << dir << "/main.spp\n";
+        std::cout << "  " << dir << "/README.md\n";
+        std::cout << "\nRun: cd " << dir << " && sapp main.spp\n";
+        return 0;
+    }
+    
+    // sapp --fmt file.spp  →  format a file in-place
+    if (arg == "--fmt") {
+        if (argc < 3) {
+            std::cerr << "Usage: sapp --fmt <file.spp>\n";
+            return 1;
+        }
+        sapphire::Formatter fmt;
+        bool ok = fmt.format_file_inplace(argv[2]);
+        if (!ok) {
+            std::cerr << "Error: could not format '" << argv[2] << "'\n";
+            return 1;
+        }
+        std::cout << "Formatted: " << argv[2] << "\n";
+        return 0;
+    }
+    
     // sapp --explain E201  →  print full error book entry
     if (arg == "--explain") {
         if (argc < 3) {
@@ -197,6 +255,64 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    // sapp --watch file.spp  →  watch file for changes, auto-rerun
+    if (arg == "--watch") {
+        if (argc < 3) {
+            std::cerr << "Usage: sapp --watch <file.spp>\n";
+            return 1;
+        }
+        std::string watch_file = argv[2];
+        
+        auto get_mod_time = [](const std::string& path) -> time_t {
+            struct stat st;
+            if (stat(path.c_str(), &st) != 0) return 0;
+            return st.st_mtime;
+        };
+        
+        auto run_file = [](const std::string& path) {
+            std::ifstream f(path);
+            if (!f.is_open()) {
+                std::cerr << "Error: could not open '" << path << "'\n";
+                return;
+            }
+            std::string src((std::istreambuf_iterator<char>(f)),
+                            std::istreambuf_iterator<char>());
+            f.close();
+            try {
+                sapphire::Lexer lexer(src);
+                auto tokens = lexer.tokenize();
+                sapphire::Parser parser(tokens, src, path);
+                auto stmts = parser.parse();
+                sapphire::Interpreter interpreter;
+                interpreter.interpret(stmts);
+            } catch (const std::exception& e) {
+                std::cerr << "Error: " << e.what() << "\n";
+            }
+        };
+        
+        time_t last_mtime = get_mod_time(watch_file);
+        if (last_mtime == 0) {
+            std::cerr << "Error: file '" << watch_file << "' not found\n";
+            return 1;
+        }
+        
+        std::cout << "Watching '" << watch_file << "' for changes...\n";
+        run_file(watch_file);
+        
+        while (true) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            time_t current_mtime = get_mod_time(watch_file);
+            if (current_mtime != last_mtime) {
+                last_mtime = current_mtime;
+                std::cout << "\n--- File changed, re-running ---\n\n";
+                run_file(watch_file);
+                std::cout << "\n--- Watching '" << watch_file << "'... ---\n";
+            }
+        }
+        
+        return 0;
+    }
+    
     // Check for compile command
     bool compile_mode = false;
     std::string filename;
@@ -288,7 +404,9 @@ int main(int argc, char* argv[]) {
         else if (t == "PermissionError")     code = "E6A1";
         else if (t == "ValueError")          code = "E7A0";
         else if (t == "TypeError")           code = "E3A0";
+        else if (t == "JSONParseError")      code = "E7A0";
 
+        // Print formatted error with source location
         sapphire::ErrorFormatter::print(
             code,
             e.getMessage(),
@@ -297,6 +415,31 @@ int main(int argc, char* argv[]) {
             e.getColumnNumber(),
             source
         );
+        
+        // Print stack trace if available
+        auto stack = e.getStackTrace();
+        if (!stack.empty()) {
+            std::cerr << C_BLUE << "  = " << C_RESET
+                      << C_BOLD << "stack trace:" << C_RESET << "\n";
+            for (const auto& frame : stack) {
+                std::cerr << "       " << frame.toString() << "\n";
+            }
+            std::cerr << "\n";
+        }
+        
+        // Print suggestion if available
+        if (!e.getSuggestion().empty()) {
+            std::cerr << C_BLUE << "  = " << C_RESET
+                      << C_BOLD << "suggestion: " << C_RESET
+                      << e.getSuggestion() << "\n\n";
+        }
+        
+        // Show --explain hint for error code
+        if (!code.empty()) {
+            std::cerr << C_BLUE << "  = " << C_RESET
+                      << C_DIM << "see:  sapp --explain " << code << C_RESET << "\n\n";
+        }
+        
         return 1;
     } catch (const std::exception& e) {
         sapphire::ErrorFormatter::print_simple("", e.what());

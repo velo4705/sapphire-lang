@@ -1,0 +1,88 @@
+# Test ? Operator with Option Types and try! syntax
+# Milestone 5 Phase 3
+
+print("Testing ? operator with Option and try! syntax\n")
+
+# Test 1: ? operator with Option types
+fn maybe_value(flag):
+    if flag:
+        return Some(42)
+    return None()
+
+fn use_question_option(x):
+    let val = maybe_value(x)?
+    return Some(val)
+
+print("Test 1: ? with Option")
+let r1 = use_question_option(true)
+match r1:
+    Some(v) => print("  Some:", v)
+    None => print("  None")
+
+let r2 = use_question_option(false)
+match r2:
+    Some(v) => print("  Some:", v)
+    None => print("  None")
+
+# Test 2: try! with Result types
+fn divide(a, b):
+    if b == 0:
+        return Err("div by zero")
+    return Ok(a / b)
+
+fn try_result(x):
+    let val = try!(divide(10, x))
+    return Ok(val)
+
+print("\nTest 2: try! with Result")
+let r3 = try_result(2)
+match r3:
+    Ok(v) => print("  Ok:", v)
+    Err(e) => print("  Err:", e)
+
+let r4 = try_result(0)
+match r4:
+    Ok(v) => print("  Ok:", v)
+    Err(e) => print("  Err:", e)
+
+# Test 3: try! with Option types
+fn try_option(x):
+    let val = try!(maybe_value(x))
+    return Some(val)
+
+print("\nTest 3: try! with Option")
+let r5 = try_option(true)
+match r5:
+    Some(v) => print("  Some:", v)
+    None => print("  None")
+
+let r6 = try_option(false)
+match r6:
+    Some(v) => print("  Some:", v)
+    None => print("  None")
+
+# Test 4: Mixed chain with ? and try!
+fn validate(n):
+    if n < 0:
+        return Err("negative")
+    if n == 0:
+        return None()
+    return Ok(n)
+
+fn process_mixed(n):
+    let checked = try!(validate(n))
+    let doubled = checked * 2
+    return Ok(doubled)
+
+print("\nTest 4: Mixed validation returning Result or Option")
+let r7 = process_mixed(5)
+match r7:
+    Ok(v) => print("  Ok:", v)
+    Err(e) => print("  Err:", e)
+
+let r8 = process_mixed(-1)
+match r8:
+    Ok(v) => print("  Ok:", v)
+    Err(e) => print("  Err:", e)
+
+print("\n✓ All Option/try! operator tests passed!")

@@ -1,0 +1,76 @@
+# Enhanced try operator: ? with Option + try! syntax
+# Milestone 5 Phase 3
+
+# ? unwraps Result (Ok) or propagates (Err)
+fn safe_divide(a, b):
+    if b == 0:
+        return Err("division by zero")
+    return Ok(a / b)
+
+fn chain_divide(a, b, c):
+    let x = safe_divide(a, b)?
+    return safe_divide(x, c)
+
+let r1 = chain_divide(20, 2, 5)
+match r1:
+    Ok(v) => print("20/2/5 =", v)
+    Err(e) => print("error:", e)
+
+let r2 = chain_divide(20, 0, 5)
+match r2:
+    Ok(v) => print("20/0/5 =", v)
+    Err(e) => print("error:", e)
+
+# ? also unwraps Option (Some) or propagates (None)
+fn find_item(id):
+    if id > 0:
+        return Some("item-" + id)
+    return None()
+
+fn process_item(id):
+    let item = find_item(id)?
+    return Some("processed:" + item)
+
+let r3 = process_item(1)
+match r3:
+    Some(v) => print("found:", v)
+    None => print("not found")
+
+let r4 = process_item(0)
+match r4:
+    Some(v) => print("found:", v)
+    None => print("not found: empty")
+
+# try!(expr) is equivalent to expr?
+fn with_try(a, b):
+    return try!(safe_divide(a, b))
+
+let r5 = with_try(10, 3)
+match r5:
+    Ok(v) => print("try! 10/3 =", v)
+    Err(e) => print("try! error:", e)
+    _ => print("unexpected")
+
+let r6 = with_try(10, 0)
+match r6:
+    Ok(v) => print("try! 10/0 =", v)
+    Err(e) => print("try! error:", e)
+    _ => print("unexpected")
+
+# try! also works with Option
+fn find_with_try(id):
+    return try!(find_item(id))
+
+let r7 = find_with_try(5)
+match r7:
+    Some(v) => print("try! found:", v)
+    None => print("try! not found")
+    _ => print("unexpected")
+
+let r8 = find_with_try(0)
+match r8:
+    Some(v) => print("try! found:", v)
+    None => print("try! not found: empty")
+    _ => print("unexpected")
+
+print("Done")

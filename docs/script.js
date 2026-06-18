@@ -393,6 +393,37 @@ document.addEventListener('DOMContentLoaded', () => {
     initSmoothScroll();
     initNavScroll();
 
+    // Hamburger menu toggle
+    const hamburger = document.getElementById('hamburger');
+    const navCenter = document.getElementById('navCenter');
+    if (hamburger && navCenter) {
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navCenter.classList.toggle('open');
+        });
+        // Close on link click
+        navCenter.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                hamburger.classList.remove('active');
+                navCenter.classList.remove('open');
+            });
+        });
+    }
+
+    // Lazy load sections below the fold
+    const lazySections = document.querySelectorAll('.section-delayed');
+    if (lazySections.length && 'IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { rootMargin: '200px' });
+        lazySections.forEach(s => observer.observe(s));
+    }
+
     const codeEl = document.querySelector('.code-preview-body code');
     const fileEl = document.querySelector('.code-preview-filename');
     if (codeEl && fileEl) {

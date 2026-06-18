@@ -197,15 +197,15 @@ void TypeInference::visitFunctionDecl(FunctionDecl& stmt) {
     std::vector<std::shared_ptr<Type>> param_types;
     for (const auto& param : stmt.parameters) {
         std::shared_ptr<Type> param_type;
-        if (param.second.empty()) {
+        if (param.type.empty()) {
             param_type = freshTypeVar();
-        } else if (param.second == "int") {
+        } else if (param.type == "int") {
             param_type = std::make_shared<IntType>();
-        } else if (param.second == "float") {
+        } else if (param.type == "float") {
             param_type = std::make_shared<FloatType>();
-        } else if (param.second == "string") {
+        } else if (param.type == "string") {
             param_type = std::make_shared<StringType>();
-        } else if (param.second == "bool") {
+        } else if (param.type == "bool") {
             param_type = std::make_shared<BoolType>();
         } else {
             param_type = freshTypeVar();

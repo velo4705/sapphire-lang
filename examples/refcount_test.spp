@@ -1,0 +1,20 @@
+# Rc/Arc/Weak Smart Pointer Tests
+
+let x = Rc(42)
+print(x.borrow())
+print(x.use_count())
+
+let y = x.clone()
+print(y.use_count())
+
+let a = Arc("hello")
+print(a.borrow())
+let b = a.clone()
+print(b.use_count())
+
+let w = Weak(a)
+print(w.expired())
+let upgraded = w.upgrade_arc()
+print(upgraded.is_some())
+
+print("ALL REFCOUNT TESTS PASSED")

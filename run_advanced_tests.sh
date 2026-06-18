@@ -1,6 +1,7 @@
 #!/bin/bash
-# Run core language tests only (no window/display or web tests)
-# Use run_advanced_tests.sh for window/web/gui tests
+# Run window/gui/display and web/network tests only
+# These require a display server and/or network access.
+# Use run_tests.sh for core language tests.
 
 SAPP="./sapp"
 PASS=0
@@ -8,13 +9,9 @@ FAIL=0
 SKIP=0
 ERRORS=()
 
-# Skip: interactive, window/gui/display, web/network, hot-reload
-SKIP_PATTERNS=(
-    # Interactive (need stdin)
-    "input_working"
-    "user_input"
-
-    # Window/GUI/Display (need OpenGL, SDL2, display server)
+# Only run: window/gui/display and web/network tests
+INCLUDE_PATTERNS=(
+    # Window/GUI/Display
     "car_simulator"
     "intermediate_plot3d_demo"
     "fpp4d"
@@ -36,28 +33,26 @@ SKIP_PATTERNS=(
     "intermediate_m12_chat_server"
     "intermediate_m4_todo_api"
     "milestone12_network_test"
-
-    # Hot-reload (need file watcher)
-    "hot_reload"
-    "reload_demo"
-
-    # Other
-    "directives_example"
 )
 
 run_test() {
     local file="$1"
     local name=$(basename "$file")
 
-    for pat in "${SKIP_PATTERNS[@]}"; do
+    # Check if this file matches any include pattern
+    local matched=0
+    for pat in "${INCLUDE_PATTERNS[@]}"; do
         if [[ "$file" == *"$pat"* ]]; then
-            echo "  SKIP  $name"
-            ((SKIP++))
-            return
+            matched=1
+            break
         fi
     done
 
-    output=$(timeout 10s "$SAPP" "$file" 2>&1)
+    if [ $matched -eq 0 ]; then
+        return  # Skip files that don't match any pattern
+    fi
+
+    output=$(timeout 15s "$SAPP" "$file" 2>&1)
     exit_code=$?
 
     if [ $exit_code -eq 124 ]; then
@@ -79,7 +74,7 @@ run_test() {
     fi
 }
 
-echo "=== Running examples/*.spp (core tests only) ==="
+echo "=== Running window/gui/web examples/*.spp ==="
 for f in examples/*.spp; do
     run_test "$f"
 done

@@ -1,0 +1,63 @@
+# Extension Methods via extend keyword
+# Milestone 6: Extension Methods & LINQ
+
+# Extend String with custom methods
+extend String:
+    fn greeting(self):
+        return "Hello, " + self + "!"
+
+    fn greet_formal(self, title):
+        return title + " " + self
+
+    fn words(self):
+        return self.split(" ")
+
+print("String extensions:")
+let name = "World"
+print(name.greeting())
+print(name.greet_formal("Dear"))
+
+let text = "one two three"
+print(text.words())
+
+# Extend Array with accessor and aggregate methods
+extend Array:
+    fn first(self):
+        return self[0]
+
+    fn last(self):
+        return self[len(self) - 1]
+
+    fn sum(self):
+        let total = 0
+        for x in self:
+            total = total + x
+        return total
+
+print()
+print("Array extensions:")
+let nums = [5, 10, 15, 20]
+print("first:", nums.first())
+print("last:", nums.last())
+print("sum:", nums.sum())
+
+# Extend HashMap with utility methods
+extend HashMap:
+    fn is_empty(self):
+        return self.size() == 0
+
+    fn has_key(self, key):
+        return self.has(key)
+
+print()
+print("HashMap extensions:")
+let map = {"x": 10, "y": 20}
+print("is empty?", map.is_empty())
+print("has x?", map.has_key("x"))
+print("has z?", map.has_key("z"))
+
+let empty = {}
+print("empty is empty?", empty.is_empty())
+
+print()
+print("Done")

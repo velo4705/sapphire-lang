@@ -30,7 +30,9 @@ private:
     Token advance();
     bool isAtEnd() const;
     bool check(TokenType type) const;
+    bool checkNext(TokenType type) const;
     bool match(const std::vector<TokenType>& types);
+    bool isKeyword(TokenType type) const;
     void consume(TokenType type, const std::string& message);
     Token consumeToken(TokenType type, const std::string& message);
     void skipNewlines();
@@ -46,6 +48,7 @@ private:
     std::unique_ptr<Stmt> classDeclaration(std::vector<Decorator> decorators = {});
     std::unique_ptr<Stmt> traitDeclaration();
     std::unique_ptr<Stmt> implBlock();
+    std::unique_ptr<Stmt> extendDeclaration();
     std::unique_ptr<Stmt> importDeclaration();
     std::unique_ptr<Stmt> statement();
     std::unique_ptr<Stmt> exprStatement();
@@ -55,6 +58,7 @@ private:
     std::unique_ptr<Stmt> forStatement();
     std::unique_ptr<Stmt> tryStatement();
     std::unique_ptr<Stmt> throwStatement();
+    std::unique_ptr<Stmt> unsafeStatement();
     std::unique_ptr<Stmt> selectStatement();
     std::unique_ptr<Stmt> goStatement();
     std::vector<std::unique_ptr<Stmt>> block();
@@ -73,6 +77,9 @@ private:
     std::unique_ptr<Expr> call();
     std::unique_ptr<Expr> primary();
     
+    // Ownership
+    Ownership parseOwnership();
+    
     // Pattern matching
     std::unique_ptr<Expr> matchExpression();
     std::unique_ptr<Pattern> pattern();
@@ -81,6 +88,9 @@ private:
     
     // Decorators
     std::vector<Decorator> parseDecorators();
+    
+    // F-string parsing
+    std::unique_ptr<Expr> parseFString(const std::string& raw_content);
 
 public:
     explicit Parser(const std::vector<Token>& tokens,

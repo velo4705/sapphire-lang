@@ -8,6 +8,7 @@
 #include <thread>
 #include <algorithm>
 #include <cstdlib>
+#include <functional>
 
 // Milestone 1 Libraries
 #include "../stdlib/collections/array.h"
@@ -79,13 +80,15 @@ inline const char* orm_model_get_create_sql(void*) { return ""; }
 #include "../stdlib/physics/physics.h"
 #include "../stdlib/simulation/simulation.h"
 #include "../stdlib/os/os.h"
+#include "../stdlib/fs/fs.h"
 
 namespace sapphire {
 
 // Environment implementation
 
-void Environment::define(const std::string& name, const Value& value) {
+void Environment::define(const std::string& name, const Value& value, Ownership o) {
     values[name] = value;
+    ownerships[name] = o;
 }
 
 Value Environment::get(const std::string& name) {
@@ -102,6 +105,10 @@ Value Environment::get(const std::string& name) {
 
 void Environment::assign(const std::string& name, const Value& value) {
     if (values.find(name) != values.end()) {
+        Ownership o = ownerships[name];
+        if (o == Ownership::BORROW) {
+            throw RuntimeError("Cannot assign to borrowed variable '" + name + "'");
+        }
         values[name] = value;
         return;
     }
@@ -112,6 +119,16 @@ void Environment::assign(const std::string& name, const Value& value) {
     }
     
     throw RuntimeError("Undefined variable '" + name + "'");
+}
+
+Ownership Environment::getOwnership(const std::string& name) {
+    if (ownerships.find(name) != ownerships.end()) {
+        return ownerships[name];
+    }
+    if (enclosing != nullptr) {
+        return enclosing->getOwnership(name);
+    }
+    return Ownership::NONE;
 }
 
 // Class implementation
@@ -154,6 +171,11 @@ Interpreter::Interpreter() {
     // Result type constructors
     environment->define("Ok", std::string("__builtin_ok__"));
     environment->define("Err", std::string("__builtin_err__"));
+    
+    // Smart pointer constructors
+    environment->define("Rc", std::string("__builtin_rc__"));
+    environment->define("Arc", std::string("__builtin_arc__"));
+    environment->define("Weak", std::string("__builtin_weak__"));
     
     // Built-in decorators
     environment->define("cache", std::string("__builtin_cache__"));
@@ -214,6 +236,12 @@ void Interpreter::interpret(std::vector<std::unique_ptr<Stmt>>& statements) {
     } catch (const ReturnException& e) {
         // Top-level return is ignored
         (void)e;
+    } catch (SapphireException& e) {
+        // Attach stack trace
+        for (const auto& frame : call_stack) {
+            e.addStackFrame(frame);
+        }
+        throw;
     }
 }
 
@@ -353,6 +381,27 @@ std::string Interpreter::valueToString(const Value& value) {
     } else if (std::holds_alternative<std::shared_ptr<HashMapMethod>>(value)) {
         auto hm = std::get<std::shared_ptr<HashMapMethod>>(value);
         return "<HashMap method " + hm->method_name + ">";
+    } else if (std::holds_alternative<std::shared_ptr<RcValue>>(value)) {
+        auto rc = std::get<std::shared_ptr<RcValue>>(value);
+        return "Rc(" + valueToString(*(rc->inner)) + ", count=" + std::to_string(rc->inner.use_count()) + ")";
+    } else if (std::holds_alternative<std::shared_ptr<RcMethod>>(value)) {
+        auto rm = std::get<std::shared_ptr<RcMethod>>(value);
+        return "<Rc method " + rm->method_name + ">";
+    } else if (std::holds_alternative<std::shared_ptr<ArcValue>>(value)) {
+        auto arc = std::get<std::shared_ptr<ArcValue>>(value);
+        return "Arc(" + valueToString(*(arc->inner)) + ", count=" + std::to_string(arc->inner.use_count()) + ")";
+    } else if (std::holds_alternative<std::shared_ptr<ArcMethod>>(value)) {
+        auto am = std::get<std::shared_ptr<ArcMethod>>(value);
+        return "<Arc method " + am->method_name + ">";
+    } else if (std::holds_alternative<std::shared_ptr<WeakValue>>(value)) {
+        auto weak = std::get<std::shared_ptr<WeakValue>>(value);
+        return std::string("<Weak ") + (weak->expired() ? "alive" : "expired") + ">";
+    } else if (std::holds_alternative<std::shared_ptr<WeakMethod>>(value)) {
+        auto wm = std::get<std::shared_ptr<WeakMethod>>(value);
+        return "<Weak method " + wm->method_name + ">";
+    } else if (std::holds_alternative<std::shared_ptr<ExtensionMethod>>(value)) {
+        auto em = std::get<std::shared_ptr<ExtensionMethod>>(value);
+        return "<extension method " + em->method->name + ">";
     }
     return "unknown";
 }
@@ -411,7 +460,11 @@ void Interpreter::visitVariableExpr(VariableExpr& expr) {
 
 void Interpreter::visitAssignExpr(AssignExpr& expr) {
     Value value = evaluateExpr(*expr.value);
-    // In Python-like languages, assignment creates the variable if it doesn't exist
+    // Check ownership before assigning
+    Ownership o = environment->getOwnership(expr.name);
+    if (o == Ownership::BORROW) {
+        throw RuntimeError("Cannot assign to borrowed variable '" + expr.name + "'");
+    }
     environment->define(expr.name, value);
     last_value = value;
 }
@@ -666,6 +719,33 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
             
             last_value = result_array;
             return;
+        } else if (sm->method_name == "trim") {
+            if (!arguments.empty()) {
+                throw TypeError("String.trim() takes no arguments");
+            }
+            std::string result = sm->string_value;
+            // Trim leading whitespace
+            size_t start = result.find_first_not_of(" \t\n\r");
+            if (start == std::string::npos) {
+                last_value = std::string("");
+                return;
+            }
+            result = result.substr(start);
+            // Trim trailing whitespace
+            size_t end = result.find_last_not_of(" \t\n\r");
+            result = result.substr(0, end + 1);
+            last_value = result;
+            return;
+        } else if (sm->method_name == "contains") {
+            if (arguments.size() != 1) {
+                throw TypeError("String.contains() takes exactly 1 argument");
+            }
+            if (!std::holds_alternative<std::string>(arguments[0])) {
+                throw TypeError("String.contains() argument must be a string");
+            }
+            std::string substr = std::get<std::string>(arguments[0]);
+            last_value = sm->string_value.find(substr) != std::string::npos;
+            return;
         }
         
         throw RuntimeError("Unknown string method: " + sm->method_name);
@@ -827,8 +907,11 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
         
         // Bind parameters to arguments
         for (size_t i = 0; i < func->parameters.size(); i++) {
-            func_env->define(func->parameters[i].first, arguments[i]);
+            func_env->define(func->parameters[i].name, arguments[i], func->parameters[i].ownership);
         }
+        
+        // Push stack frame
+        call_stack.emplace_back(original_name, "", -1, -1);
         
         // Save current environment
         auto previous_env = environment;
@@ -844,6 +927,11 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
         } catch (const ReturnException& ret) {
             // Function returned a value
             last_value = ret.value;
+        }
+        
+        // Pop stack frame
+        if (!call_stack.empty()) {
+            call_stack.pop_back();
         }
         
         // Restore previous environment
@@ -900,10 +988,51 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
         auto func_env = std::make_shared<Environment>(func->closure);
         
         // Bind self
-        func_env->define(func->parameters[0].first, bm->instance);
+        func_env->define(func->parameters[0].name, bm->instance, func->parameters[0].ownership);
         // Bind remaining parameters
         for (size_t i = 1; i < func->parameters.size(); i++) {
-            func_env->define(func->parameters[i].first, arguments[i - 1]);
+            func_env->define(func->parameters[i].name, arguments[i - 1], func->parameters[i].ownership);
+        }
+        
+        auto previous_env = environment;
+        environment = func_env;
+        
+        try {
+            for (auto& stmt : *func->getBody()) {
+                stmt->accept(*this);
+            }
+            last_value = nullptr;
+        } catch (const ReturnException& ret) {
+            last_value = ret.value;
+        }
+        
+        environment = previous_env;
+        return;
+    }
+    
+    // Handle extension methods (extend keyword)
+    if (std::holds_alternative<std::shared_ptr<ExtensionMethod>>(callee)) {
+        auto em = std::get<std::shared_ptr<ExtensionMethod>>(callee);
+        auto func = em->method;
+        
+        if (func->parameters.empty()) {
+            throw TypeError("Extension method '" + func->name + "' must have at least a 'self' parameter");
+        }
+        
+        if (arguments.size() != func->parameters.size() - 1) {
+            throw TypeError("Extension method '" + func->name + "' expects " + 
+                            std::to_string(func->parameters.size() - 1) + 
+                            " arguments but got " + 
+                            std::to_string(arguments.size()));
+        }
+        
+        auto func_env = std::make_shared<Environment>(func->closure);
+        
+        // Bind self to the object
+        func_env->define(func->parameters[0].name, em->object, func->parameters[0].ownership);
+        // Bind remaining parameters
+        for (size_t i = 1; i < func->parameters.size(); i++) {
+            func_env->define(func->parameters[i].name, arguments[i - 1], func->parameters[i].ownership);
         }
         
         auto previous_env = environment;
@@ -944,10 +1073,10 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
             auto func_env = std::make_shared<Environment>(func->closure);
             
             // Bind cls (first parameter) to the class
-            func_env->define(func->parameters[0].first, sm->klass);
+            func_env->define(func->parameters[0].name, sm->klass, func->parameters[0].ownership);
             // Bind remaining parameters
             for (size_t i = 1; i < func->parameters.size(); i++) {
-                func_env->define(func->parameters[i].first, arguments[i - 1]);
+            func_env->define(func->parameters[i].name, arguments[i - 1], func->parameters[i].ownership);
             }
             
             auto previous_env = environment;
@@ -977,7 +1106,7 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
             
             // Bind all parameters
             for (size_t i = 0; i < func->parameters.size(); i++) {
-                func_env->define(func->parameters[i].first, arguments[i]);
+                func_env->define(func->parameters[i].name, arguments[i], func->parameters[i].ownership);
             }
             
             auto previous_env = environment;
@@ -1018,10 +1147,10 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
             
             auto func_env = std::make_shared<Environment>(init->closure);
             // Bind self
-            func_env->define(init->parameters[0].first, instance);
+            func_env->define(init->parameters[0].name, instance, init->parameters[0].ownership);
             // Bind remaining parameters
             for (size_t i = 1; i < init->parameters.size(); i++) {
-                func_env->define(init->parameters[i].first, arguments[i - 1]);
+                func_env->define(init->parameters[i].name, arguments[i - 1], init->parameters[i].ownership);
             }
             
             auto previous_env = environment;
@@ -1242,6 +1371,54 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
             auto result = std::make_shared<ResultValue>(false, arguments[0]);
             last_value = result;
             return;
+        } else if (func_name == "__builtin_rc__") {
+            // Create Rc(value) - reference counted pointer
+            if (arguments.size() != 1) {
+                throw TypeError("Rc() requires exactly 1 argument");
+            }
+            // If argument is already an Rc, share the same level of indirection
+            if (std::holds_alternative<std::shared_ptr<RcValue>>(arguments[0])) {
+                auto existing = std::get<std::shared_ptr<RcValue>>(arguments[0]);
+                auto rc = std::make_shared<RcValue>(existing->inner);
+                last_value = rc;
+                return;
+            }
+            auto rc = std::make_shared<RcValue>(arguments[0]);
+            last_value = rc;
+            return;
+        } else if (func_name == "__builtin_arc__") {
+            // Create Arc(value) - atomic reference counted pointer
+            if (arguments.size() != 1) {
+                throw TypeError("Arc() requires exactly 1 argument");
+            }
+            // If argument is already an Arc, share the same level of indirection
+            if (std::holds_alternative<std::shared_ptr<ArcValue>>(arguments[0])) {
+                auto existing = std::get<std::shared_ptr<ArcValue>>(arguments[0]);
+                auto arc = std::make_shared<ArcValue>(existing->inner);
+                last_value = arc;
+                return;
+            }
+            auto arc = std::make_shared<ArcValue>(arguments[0]);
+            last_value = arc;
+            return;
+        } else if (func_name == "__builtin_weak__") {
+            // Create Weak(rc_or_arc) - weak reference
+            if (arguments.size() != 1) {
+                throw TypeError("Weak() requires exactly 1 argument");
+            }
+            if (std::holds_alternative<std::shared_ptr<RcValue>>(arguments[0])) {
+                auto rc = std::get<std::shared_ptr<RcValue>>(arguments[0]);
+                auto weak = std::make_shared<WeakValue>(rc);
+                last_value = weak;
+                return;
+            } else if (std::holds_alternative<std::shared_ptr<ArcValue>>(arguments[0])) {
+                auto arc = std::get<std::shared_ptr<ArcValue>>(arguments[0]);
+                auto weak = std::make_shared<WeakValue>(arc);
+                last_value = weak;
+                return;
+            } else {
+                throw TypeError("Weak() requires an Rc or Arc argument");
+            }
         } else if (func_name == "__builtin_map__") {
             // map(array, function) - Transform each element
             if (arguments.size() != 2) {
@@ -1274,7 +1451,7 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
                     if (fn->parameters.size() != 1) {
                         throw TypeError("map() function must take exactly 1 argument");
                     }
-                    fn_env->define(fn->parameters[0].first, elem);
+                    fn_env->define(fn->parameters[0].name, elem, fn->parameters[0].ownership);
                     
                     // Execute function body
                     auto previous_env = environment;
@@ -1327,7 +1504,7 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
                     if (fn->parameters.size() != 1) {
                         throw TypeError("filter() predicate must take exactly 1 argument");
                     }
-                    fn_env->define(fn->parameters[0].first, elem);
+                    fn_env->define(fn->parameters[0].name, elem, fn->parameters[0].ownership);
                     
                     // Execute function body
                     auto previous_env = environment;
@@ -1382,8 +1559,8 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
                     auto fn_env = std::make_shared<Environment>(fn->closure);
                     
                     // Bind parameters (accumulator, element)
-                    fn_env->define(fn->parameters[0].first, accumulator);
-                    fn_env->define(fn->parameters[1].first, elem);
+                    fn_env->define(fn->parameters[0].name, accumulator, fn->parameters[0].ownership);
+                    fn_env->define(fn->parameters[1].name, elem, fn->parameters[1].ownership);
                     
                     // Execute function body
                     auto previous_env = environment;
@@ -1563,7 +1740,7 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
                     if (fn->parameters.size() != 1) {
                         throw TypeError("find() predicate must take exactly 1 argument");
                     }
-                    fn_env->define(fn->parameters[0].first, elem);
+                    fn_env->define(fn->parameters[0].name, elem, fn->parameters[0].ownership);
                     
                     // Execute function body
                     auto previous_env = environment;
@@ -1618,7 +1795,7 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
                     if (fn->parameters.size() != 1) {
                         throw TypeError("all() predicate must take exactly 1 argument");
                     }
-                    fn_env->define(fn->parameters[0].first, elem);
+                    fn_env->define(fn->parameters[0].name, elem, fn->parameters[0].ownership);
                     
                     auto previous_env = environment;
                     environment = fn_env;
@@ -1669,7 +1846,7 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
                     if (fn->parameters.size() != 1) {
                         throw TypeError("any() predicate must take exactly 1 argument");
                     }
-                    fn_env->define(fn->parameters[0].first, elem);
+                    fn_env->define(fn->parameters[0].name, elem, fn->parameters[0].ownership);
                     
                     auto previous_env = environment;
                     environment = fn_env;
@@ -2290,6 +2467,129 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
             last_value = arguments[2];
             return;
             
+        // ===== JSON PUSH =====
+        } else if (func_name == "__builtin_json_push__") {
+            if (arguments.size() != 2) {
+                throw TypeError("json_push() requires 2 arguments (array, value)");
+            }
+            void* json_array = reinterpret_cast<void*>(static_cast<intptr_t>(std::get<int>(arguments[0])));
+            void* json_value = nullptr;
+            if (std::holds_alternative<std::nullptr_t>(arguments[1])) {
+                json_value = sapphire_json_create_null();
+            } else if (std::holds_alternative<bool>(arguments[1])) {
+                json_value = sapphire_json_create_bool(std::get<bool>(arguments[1]));
+            } else if (std::holds_alternative<int>(arguments[1])) {
+                json_value = sapphire_json_create_number(static_cast<double>(std::get<int>(arguments[1])));
+            } else if (std::holds_alternative<double>(arguments[1])) {
+                json_value = sapphire_json_create_number(std::get<double>(arguments[1]));
+            } else if (std::holds_alternative<std::string>(arguments[1])) {
+                json_value = sapphire_json_create_string(std::get<std::string>(arguments[1]).c_str());
+            } else {
+                throw TypeError("Unsupported value type for json_push");
+            }
+            sapphire_json_array_push(json_array, json_value);
+            last_value = nullptr;
+            return;
+
+        // ===== JSON SIZE =====
+        } else if (func_name == "__builtin_json_size__") {
+            if (arguments.size() != 1) {
+                throw TypeError("json_size() requires 1 argument (json_value)");
+            }
+            void* json_value = reinterpret_cast<void*>(static_cast<intptr_t>(std::get<int>(arguments[0])));
+            int64_t size = sapphire_json_array_size(json_value);
+            last_value = static_cast<int>(size);
+            return;
+
+        // ===== JSON LOADS (native) =====
+        } else if (func_name == "__builtin_json_loads__") {
+            if (arguments.size() != 1) {
+                throw TypeError("json_loads() requires 1 argument (json_string)");
+            }
+            std::string json_text = std::get<std::string>(arguments[0]);
+
+            {
+                auto parsed = sapphire::stdlib::JSON::parse_json(json_text);
+                if (!parsed) {
+                    throw RuntimeError("Failed to parse JSON string");
+                }
+
+                std::function<Value(const std::shared_ptr<sapphire::stdlib::JSON::JSONValue>&)> toNative;
+                toNative = [&](const std::shared_ptr<sapphire::stdlib::JSON::JSONValue>& jv) -> Value {
+                    using namespace sapphire::stdlib::JSON;
+                    if (!jv || jv->is_null()) return Value{nullptr};
+                    if (jv->is_bool()) return jv->as_bool();
+                    if (jv->is_number()) {
+                        double num = jv->as_number();
+                        if (num == static_cast<int>(num)) return static_cast<int>(num);
+                        return num;
+                    }
+                    if (jv->is_string()) return jv->as_string();
+                    if (jv->is_array()) {
+                        auto arr = std::make_shared<ArrayValue>();
+                        for (const auto& elem : jv->as_array()) {
+                            arr->elements.push_back(toNative(elem));
+                        }
+                        return arr;
+                    }
+                    if (jv->is_object()) {
+                        auto map = std::make_shared<HashMapValue>();
+                        for (const auto& [k, v] : jv->as_object()) {
+                            map->pairs[k] = toNative(v);
+                        }
+                        return map;
+                    }
+                    return Value{nullptr};
+                };
+
+                last_value = toNative(parsed);
+            }
+            return;
+
+        // ===== JSON DUMPS (native) =====
+        } else if (func_name == "__builtin_json_dumps__") {
+            if (arguments.size() < 1 || arguments.size() > 2) {
+                throw TypeError("json_dumps() requires 1-2 arguments (value, pretty=false)");
+            }
+            {
+                bool pretty = arguments.size() > 1 ? std::get<bool>(arguments[1]) : false;
+
+                std::function<std::shared_ptr<sapphire::stdlib::JSON::JSONValue>(const Value&)> toJson;
+                toJson = [&](const Value& val) -> std::shared_ptr<sapphire::stdlib::JSON::JSONValue> {
+                    using namespace sapphire::stdlib::JSON;
+                    if (std::holds_alternative<std::nullptr_t>(val)) return create_json_null();
+                    if (std::holds_alternative<bool>(val)) return create_json_bool(std::get<bool>(val));
+                    if (std::holds_alternative<int>(val)) return create_json_number(static_cast<double>(std::get<int>(val)));
+                    if (std::holds_alternative<double>(val)) return create_json_number(std::get<double>(val));
+                    if (std::holds_alternative<std::string>(val)) return create_json_string(std::get<std::string>(val));
+                    if (std::holds_alternative<std::shared_ptr<ArrayValue>>(val)) {
+                        auto arr_val = std::get<std::shared_ptr<ArrayValue>>(val);
+                        JSONArray json_arr;
+                        for (const auto& elem : arr_val->elements) {
+                            json_arr.push_back(toJson(elem));
+                        }
+                        return std::make_shared<JSONValue>(json_arr);
+                    }
+                    if (std::holds_alternative<std::shared_ptr<HashMapValue>>(val)) {
+                        auto map_val = std::get<std::shared_ptr<HashMapValue>>(val);
+                        JSONObject json_obj;
+                        for (const auto& [k, v] : map_val->pairs) {
+                            json_obj[k] = toJson(v);
+                        }
+                        return std::make_shared<JSONValue>(json_obj);
+                    }
+                    return create_json_null();
+                };
+
+                auto json_val = toJson(arguments[0]);
+                if (!json_val) {
+                    throw RuntimeError("Failed to convert value to JSON");
+                }
+                std::string json_str = sapphire::stdlib::JSON::stringify_json(json_val, pretty);
+                last_value = json_str;
+            }
+            return;
+
         // ===== MILESTONE 2: RANDOM NUMBERS =====
         } else if (func_name == "__builtin_random_seed__") {
             if (arguments.size() != 1) {
@@ -2857,7 +3157,138 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
             last_value = std::string(escaped);
             http_free_string(escaped);
             return;
-            
+
+        // ===== HTTP ROUTE REGISTRATION =====
+        } else if (func_name == "__builtin_http_server_get__") {
+            if (arguments.size() != 3) {
+                throw TypeError("http_server_get() requires 3 arguments (server, path, handler_name)");
+            }
+            {
+                void* server = reinterpret_cast<void*>(static_cast<intptr_t>(std::get<int>(arguments[0])));
+                std::string path = std::get<std::string>(arguments[1]);
+                std::string handler = std::get<std::string>(arguments[2]);
+                http_server_get(server, path.c_str(), nullptr);
+                last_value = nullptr;
+            }
+            return;
+
+        } else if (func_name == "__builtin_http_server_post__") {
+            if (arguments.size() != 3) {
+                throw TypeError("http_server_post() requires 3 arguments (server, path, handler_name)");
+            }
+            {
+                void* server = reinterpret_cast<void*>(static_cast<intptr_t>(std::get<int>(arguments[0])));
+                std::string path = std::get<std::string>(arguments[1]);
+                std::string handler = std::get<std::string>(arguments[2]);
+                http_server_post(server, path.c_str(), nullptr);
+                last_value = nullptr;
+            }
+            return;
+
+        } else if (func_name == "__builtin_http_server_put__") {
+            if (arguments.size() != 3) {
+                throw TypeError("http_server_put() requires 3 arguments (server, path, handler_name)");
+            }
+            {
+                void* server = reinterpret_cast<void*>(static_cast<intptr_t>(std::get<int>(arguments[0])));
+                std::string path = std::get<std::string>(arguments[1]);
+                std::string handler = std::get<std::string>(arguments[2]);
+                http_server_put(server, path.c_str(), nullptr);
+                last_value = nullptr;
+            }
+            return;
+
+        } else if (func_name == "__builtin_http_server_delete__") {
+            if (arguments.size() != 3) {
+                throw TypeError("http_server_delete() requires 3 arguments (server, path, handler_name)");
+            }
+            {
+                void* server = reinterpret_cast<void*>(static_cast<intptr_t>(std::get<int>(arguments[0])));
+                std::string path = std::get<std::string>(arguments[1]);
+                std::string handler = std::get<std::string>(arguments[2]);
+                http_server_delete(server, path.c_str(), nullptr);
+                last_value = nullptr;
+            }
+            return;
+
+        // ===== FS MODULE =====
+        } else if (func_name == "__builtin_fs_exists__") {
+            if (arguments.size() != 1) {
+                throw TypeError("fs_exists() requires 1 argument (path)");
+            }
+            std::string path = std::get<std::string>(arguments[0]);
+            last_value = static_cast<bool>(fs_exists(path.c_str()));
+            return;
+
+        } else if (func_name == "__builtin_fs_is_file__") {
+            if (arguments.size() != 1) {
+                throw TypeError("fs_is_file() requires 1 argument (path)");
+            }
+            std::string path = std::get<std::string>(arguments[0]);
+            last_value = static_cast<bool>(fs_is_file(path.c_str()));
+            return;
+
+        } else if (func_name == "__builtin_fs_is_dir__") {
+            if (arguments.size() != 1) {
+                throw TypeError("fs_is_dir() requires 1 argument (path)");
+            }
+            std::string path = std::get<std::string>(arguments[0]);
+            last_value = static_cast<bool>(fs_is_dir(path.c_str()));
+            return;
+
+        } else if (func_name == "__builtin_fs_create_dir__") {
+            if (arguments.size() != 1) {
+                throw TypeError("fs_create_dir() requires 1 argument (path)");
+            }
+            std::string path = std::get<std::string>(arguments[0]);
+            last_value = static_cast<bool>(fs_create_dir(path.c_str()));
+            return;
+
+        } else if (func_name == "__builtin_fs_read_file__") {
+            if (arguments.size() != 1) {
+                throw TypeError("fs_read_file() requires 1 argument (path)");
+            }
+            std::string path = std::get<std::string>(arguments[0]);
+            char* content = fs_read_file(path.c_str());
+            if (content) {
+                last_value = std::string(content);
+                fs_free_string(content);
+            } else {
+                last_value = Value{};
+            }
+            return;
+
+        } else if (func_name == "__builtin_fs_write_file__") {
+            if (arguments.size() != 2) {
+                throw TypeError("fs_write_file() requires 2 arguments (path, content)");
+            }
+            std::string path = std::get<std::string>(arguments[0]);
+            std::string content = std::get<std::string>(arguments[1]);
+            last_value = static_cast<bool>(fs_write_file(path.c_str(), content.c_str()));
+            return;
+
+        } else if (func_name == "__builtin_fs_delete__") {
+            if (arguments.size() != 1) {
+                throw TypeError("fs_delete() requires 1 argument (path)");
+            }
+            std::string path = std::get<std::string>(arguments[0]);
+            last_value = static_cast<bool>(fs_delete(path.c_str()));
+            return;
+
+        } else if (func_name == "__builtin_fs_abs_path__") {
+            if (arguments.size() != 1) {
+                throw TypeError("fs_abs_path() requires 1 argument (path)");
+            }
+            std::string path = std::get<std::string>(arguments[0]);
+            char* result = fs_abs_path(path.c_str());
+            if (result) {
+                last_value = std::string(result);
+                fs_free_string(result);
+            } else {
+                last_value = Value{};
+            }
+            return;
+
         // ===== WEBSOCKET SUPPORT =====
         } else if (func_name == "__builtin_websocket_server_create__") {
             // Create WebSocket server
@@ -8025,7 +8456,7 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
             
             auto func_env = std::make_shared<Environment>(func->closure);
             for (size_t i = 0; i < func->parameters.size(); i++) {
-                func_env->define(func->parameters[i].first, func_args[i]);
+                func_env->define(func->parameters[i].name, func_args[i]);
             }
             
             auto previous_env = environment;
@@ -8072,7 +8503,7 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
             
             auto func_env = std::make_shared<Environment>(func->closure);
             for (size_t i = 0; i < func->parameters.size(); i++) {
-                func_env->define(func->parameters[i].first, func_args[i]);
+                func_env->define(func->parameters[i].name, func_args[i]);
             }
             
             auto previous_env = environment;
@@ -8157,7 +8588,7 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
             
             auto func_env = std::make_shared<Environment>(func->closure);
             for (size_t i = 0; i < func->parameters.size(); i++) {
-                func_env->define(func->parameters[i].first, func_args[i]);
+                func_env->define(func->parameters[i].name, func_args[i]);
             }
             
             auto previous_env = environment;
@@ -8204,7 +8635,7 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
             
             auto func_env = std::make_shared<Environment>(func->closure);
             for (size_t i = 0; i < func->parameters.size(); i++) {
-                func_env->define(func->parameters[i].first, func_args[i]);
+                func_env->define(func->parameters[i].name, func_args[i]);
             }
             
             auto previous_env = environment;
@@ -8251,7 +8682,7 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
             
             auto func_env = std::make_shared<Environment>(func->closure);
             for (size_t i = 0; i < func->parameters.size(); i++) {
-                func_env->define(func->parameters[i].first, func_args[i]);
+                func_env->define(func->parameters[i].name, func_args[i]);
             }
             
             auto previous_env = environment;
@@ -8274,6 +8705,111 @@ void Interpreter::visitCallExpr(CallExpr& expr) {
         }
         
         throw RuntimeError("Unknown Result method: " + rm->method_name);
+    }
+    
+    // Handle Rc methods
+    if (std::holds_alternative<std::shared_ptr<RcMethod>>(callee)) {
+        auto rcm = std::get<std::shared_ptr<RcMethod>>(callee);
+        
+        if (rcm->method_name == "borrow") {
+            if (!arguments.empty()) {
+                throw TypeError("Rc.borrow() takes no arguments");
+            }
+            last_value = rcm->rc->borrow();
+            return;
+        } else if (rcm->method_name == "use_count") {
+            if (!arguments.empty()) {
+                throw TypeError("Rc.use_count() takes no arguments");
+            }
+            last_value = static_cast<int>(rcm->rc->use_count());
+            return;
+        } else if (rcm->method_name == "clone") {
+            if (!arguments.empty()) {
+                throw TypeError("Rc.clone() takes no arguments");
+            }
+            auto new_rc = std::make_shared<RcValue>(rcm->rc->inner);
+            last_value = new_rc;
+            return;
+        }
+        
+        throw RuntimeError("Unknown Rc method: " + rcm->method_name);
+    }
+    
+    // Handle Arc methods
+    if (std::holds_alternative<std::shared_ptr<ArcMethod>>(callee)) {
+        auto acm = std::get<std::shared_ptr<ArcMethod>>(callee);
+        
+        if (acm->method_name == "borrow") {
+            if (!arguments.empty()) {
+                throw TypeError("Arc.borrow() takes no arguments");
+            }
+            last_value = acm->arc->borrow();
+            return;
+        } else if (acm->method_name == "use_count") {
+            if (!arguments.empty()) {
+                throw TypeError("Arc.use_count() takes no arguments");
+            }
+            last_value = static_cast<int>(acm->arc->use_count());
+            return;
+        } else if (acm->method_name == "clone") {
+            if (!arguments.empty()) {
+                throw TypeError("Arc.clone() takes no arguments");
+            }
+            auto new_arc = std::make_shared<ArcValue>(acm->arc->inner);
+            last_value = new_arc;
+            return;
+        }
+        
+        throw RuntimeError("Unknown Arc method: " + acm->method_name);
+    }
+    
+    // Handle Weak methods
+    if (std::holds_alternative<std::shared_ptr<WeakMethod>>(callee)) {
+        auto wkm = std::get<std::shared_ptr<WeakMethod>>(callee);
+        
+        if (wkm->method_name == "upgrade_rc") {
+            if (!arguments.empty()) {
+                throw TypeError("Weak.upgrade_rc() takes no arguments");
+            }
+            if (!wkm->weak->expired()) {
+                auto upgraded = wkm->weak->upgrade_rc();
+                if (upgraded) {
+                    auto rc = std::make_shared<RcValue>(std::move(upgraded));
+                    last_value = std::make_shared<OptionValue>(Value(rc));
+                    return;
+                }
+            }
+            last_value = std::make_shared<OptionValue>();
+            return;
+        } else if (wkm->method_name == "upgrade_arc") {
+            if (!arguments.empty()) {
+                throw TypeError("Weak.upgrade_arc() takes no arguments");
+            }
+            if (!wkm->weak->expired()) {
+                auto upgraded = wkm->weak->upgrade_arc();
+                if (upgraded) {
+                    auto arc = std::make_shared<ArcValue>(std::move(upgraded));
+                    last_value = std::make_shared<OptionValue>(Value(arc));
+                    return;
+                }
+            }
+            last_value = std::make_shared<OptionValue>();
+            return;
+        } else if (wkm->method_name == "expired") {
+            if (!arguments.empty()) {
+                throw TypeError("Weak.expired() takes no arguments");
+            }
+            last_value = wkm->weak->expired();
+            return;
+        } else if (wkm->method_name == "use_count") {
+            if (!arguments.empty()) {
+                throw TypeError("Weak.use_count() takes no arguments");
+            }
+            last_value = static_cast<int>(wkm->weak->use_count());
+            return;
+        }
+        
+        throw RuntimeError("Unknown Weak method: " + wkm->method_name);
     }
 }
 
@@ -8392,6 +8928,43 @@ void Interpreter::visitGetExpr(GetExpr& expr) {
         throw RuntimeError("Undefined method '" + expr.name + "' on Result");
     }
     
+    // Handle Rc methods
+    if (std::holds_alternative<std::shared_ptr<RcValue>>(object)) {
+        auto rc = std::get<std::shared_ptr<RcValue>>(object);
+        
+        if (expr.name == "borrow" || expr.name == "use_count" || expr.name == "clone") {
+            last_value = std::make_shared<RcMethod>(rc, expr.name);
+            return;
+        }
+        
+        throw RuntimeError("Undefined method '" + expr.name + "' on Rc");
+    }
+    
+    // Handle Arc methods
+    if (std::holds_alternative<std::shared_ptr<ArcValue>>(object)) {
+        auto arc = std::get<std::shared_ptr<ArcValue>>(object);
+        
+        if (expr.name == "borrow" || expr.name == "use_count" || expr.name == "clone") {
+            last_value = std::make_shared<ArcMethod>(arc, expr.name);
+            return;
+        }
+        
+        throw RuntimeError("Undefined method '" + expr.name + "' on Arc");
+    }
+    
+    // Handle Weak methods
+    if (std::holds_alternative<std::shared_ptr<WeakValue>>(object)) {
+        auto weak = std::get<std::shared_ptr<WeakValue>>(object);
+        
+        if (expr.name == "upgrade_rc" || expr.name == "upgrade_arc" || 
+            expr.name == "expired" || expr.name == "use_count") {
+            last_value = std::make_shared<WeakMethod>(weak, expr.name);
+            return;
+        }
+        
+        throw RuntimeError("Undefined method '" + expr.name + "' on Weak");
+    }
+    
     // Handle static method access on Class (e.g., MyClass.static_method)
     if (std::holds_alternative<std::shared_ptr<Class>>(object)) {
         auto cls = std::get<std::shared_ptr<Class>>(object);
@@ -8432,6 +9005,16 @@ void Interpreter::visitGetExpr(GetExpr& expr) {
             return;
         }
         
+        // Check extension methods for Array
+        auto arr_ext = extensions.find("Array");
+        if (arr_ext != extensions.end()) {
+            auto meth_it = arr_ext->second.find(expr.name);
+            if (meth_it != arr_ext->second.end()) {
+                last_value = std::make_shared<ExtensionMethod>(object, meth_it->second);
+                return;
+            }
+        }
+        
         throw RuntimeError("Unknown array property '" + expr.name + "'");
     }
     
@@ -8454,6 +9037,22 @@ void Interpreter::visitGetExpr(GetExpr& expr) {
         } else if (expr.name == "split") {
             last_value = std::make_shared<StringMethod>(str, "split");
             return;
+        } else if (expr.name == "trim") {
+            last_value = std::make_shared<StringMethod>(str, "trim");
+            return;
+        } else if (expr.name == "contains") {
+            last_value = std::make_shared<StringMethod>(str, "contains");
+            return;
+        }
+        
+        // Check extension methods for String
+        auto str_ext = extensions.find("String");
+        if (str_ext != extensions.end()) {
+            auto meth_it = str_ext->second.find(expr.name);
+            if (meth_it != str_ext->second.end()) {
+                last_value = std::make_shared<ExtensionMethod>(object, meth_it->second);
+                return;
+            }
         }
         
         throw RuntimeError("Unknown string property '" + expr.name + "'");
@@ -8487,6 +9086,16 @@ void Interpreter::visitGetExpr(GetExpr& expr) {
         } else if (expr.name == "length") {
             last_value = static_cast<int>(hashmap->pairs.size());
             return;
+        }
+        
+        // Check extension methods for HashMap
+        auto hm_ext = extensions.find("HashMap");
+        if (hm_ext != extensions.end()) {
+            auto meth_it = hm_ext->second.find(expr.name);
+            if (meth_it != hm_ext->second.end()) {
+                last_value = std::make_shared<ExtensionMethod>(object, meth_it->second);
+                return;
+            }
         }
         
         throw RuntimeError("Unknown hash map property '" + expr.name + "'");
@@ -8610,7 +9219,7 @@ void Interpreter::visitVarDeclStmt(VarDeclStmt& stmt) {
     if (stmt.initializer) {
         value = evaluateExpr(*stmt.initializer);
     }
-    environment->define(stmt.name, value);
+    environment->define(stmt.name, value, stmt.ownership);
 }
 
 void Interpreter::visitFunctionDecl(FunctionDecl& stmt) {
@@ -8741,7 +9350,7 @@ void Interpreter::visitFunctionDecl(FunctionDecl& stmt) {
             }
             
             for (size_t i = 0; i < dec_fn->parameters.size(); i++) {
-                dec_env->define(dec_fn->parameters[i].first, args[i]);
+                dec_env->define(dec_fn->parameters[i].name, args[i], dec_fn->parameters[i].ownership);
             }
             
             auto previous_env = environment;
@@ -8789,8 +9398,14 @@ void Interpreter::visitIfStmt(IfStmt& stmt) {
 
 void Interpreter::visitWhileStmt(WhileStmt& stmt) {
     while (isTruthy(evaluateExpr(*stmt.condition))) {
-        for (auto& s : stmt.body) {
-            s->accept(*this);
+        try {
+            for (auto& s : stmt.body) {
+                s->accept(*this);
+            }
+        } catch (const BreakException&) {
+            break;
+        } catch (const ContinueException&) {
+            continue;
         }
     }
 }
@@ -8818,23 +9433,102 @@ void Interpreter::visitForStmt(ForStmt& stmt) {
             environment->define(stmt.variable, value);
             
             // Execute loop body
-            for (auto& s : stmt.body) {
-                s->accept(*this);
+            try {
+                for (auto& s : stmt.body) {
+                    s->accept(*this);
+                }
+            } catch (const BreakException&) {
+                break;
+            } catch (const ContinueException&) {
+                continue;
             }
         }
         return;
     }
     
-    // Simplified: assume iterable is an integer (range)
+    // Handle string iteration
+    if (std::holds_alternative<std::string>(iterable)) {
+        std::string str = std::get<std::string>(iterable);
+        for (size_t i = 0; i < str.size(); i++) {
+            environment->define(stmt.variable, std::string(1, str[i]));
+            try {
+                for (auto& s : stmt.body) {
+                    s->accept(*this);
+                }
+            } catch (const BreakException&) {
+                break;
+            } catch (const ContinueException&) {
+                continue;
+            }
+        }
+        return;
+    }
+    
+    // Handle array/list iteration
+    if (std::holds_alternative<std::shared_ptr<ArrayValue>>(iterable)) {
+        auto array = std::get<std::shared_ptr<ArrayValue>>(iterable);
+        for (size_t i = 0; i < array->elements.size(); i++) {
+            environment->define(stmt.variable, array->elements[i]);
+            try {
+                for (auto& s : stmt.body) {
+                    s->accept(*this);
+                }
+            } catch (const BreakException&) {
+                break;
+            } catch (const ContinueException&) {
+                continue;
+            }
+        }
+        return;
+    }
+    
+    // Handle hash map iteration (iterate over keys)
+    if (std::holds_alternative<std::shared_ptr<HashMapValue>>(iterable)) {
+        auto hashmap = std::get<std::shared_ptr<HashMapValue>>(iterable);
+        for (const auto& pair : hashmap->pairs) {
+            environment->define(stmt.variable, pair.first);
+            try {
+                for (auto& s : stmt.body) {
+                    s->accept(*this);
+                }
+            } catch (const BreakException&) {
+                break;
+            } catch (const ContinueException&) {
+                continue;
+            }
+        }
+        return;
+    }
+    
+    // Handle integer iteration (range)
     if (std::holds_alternative<int>(iterable)) {
         int end = std::get<int>(iterable);
         for (int i = 0; i < end; i++) {
             environment->define(stmt.variable, i);
-            for (auto& s : stmt.body) {
-                s->accept(*this);
+            try {
+                for (auto& s : stmt.body) {
+                    s->accept(*this);
+                }
+            } catch (const BreakException&) {
+                break;
+            } catch (const ContinueException&) {
+                continue;
             }
         }
+        return;
     }
+    
+    throwException("TypeError", "not iterable");
+}
+
+void Interpreter::visitBreakStmt(BreakStmt& stmt) {
+    (void)stmt;
+    throw BreakException();
+}
+
+void Interpreter::visitContinueStmt(ContinueStmt& stmt) {
+    (void)stmt;
+    throw ContinueException();
 }
 
 void Interpreter::visitTryStmt(TryStmt& stmt) {
@@ -9042,6 +9736,8 @@ void Interpreter::visitImportStmt(ImportStmt& stmt) {
         environment->define("json_set", std::string("__builtin_json_set__"));
         environment->define("json_push", std::string("__builtin_json_push__"));
         environment->define("json_size", std::string("__builtin_json_size__"));
+        environment->define("json_loads", std::string("__builtin_json_loads__"));
+        environment->define("json_dumps", std::string("__builtin_json_dumps__"));
     }
 
     // Milestone 2: Random Numbers
@@ -9103,6 +9799,18 @@ void Interpreter::visitImportStmt(ImportStmt& stmt) {
         environment->define("http_url_encode", std::string("__builtin_http_url_encode__"));
         environment->define("http_url_decode", std::string("__builtin_http_url_decode__"));
         environment->define("http_html_escape", std::string("__builtin_http_html_escape__"));
+    }
+
+    // File System Module
+    if (mod == "fs") {
+        environment->define("fs_exists", std::string("__builtin_fs_exists__"));
+        environment->define("fs_is_file", std::string("__builtin_fs_is_file__"));
+        environment->define("fs_is_dir", std::string("__builtin_fs_is_dir__"));
+        environment->define("fs_create_dir", std::string("__builtin_fs_create_dir__"));
+        environment->define("fs_read_file", std::string("__builtin_fs_read_file__"));
+        environment->define("fs_write_file", std::string("__builtin_fs_write_file__"));
+        environment->define("fs_delete", std::string("__builtin_fs_delete__"));
+        environment->define("fs_abs_path", std::string("__builtin_fs_abs_path__"));
     }
 
     // Milestone 4: WebSocket Support
@@ -11564,20 +12272,38 @@ void Interpreter::visitChannelReceiveExpr(ChannelReceiveExpr& expr) {
 void Interpreter::visitTryExpr(TryExpr& expr) {
     Value result_val = evaluateExpr(*expr.operand);
     
-    // The ? operator only works with Result types
-    if (!std::holds_alternative<std::shared_ptr<ResultValue>>(result_val)) {
-        throw RuntimeError("? operator can only be used with Result types");
+    // Handle Result types (Ok → unwrap, Err → propagate)
+    if (std::holds_alternative<std::shared_ptr<ResultValue>>(result_val)) {
+        auto result = std::get<std::shared_ptr<ResultValue>>(result_val);
+        if (result->isOk()) {
+            last_value = result->value;
+        } else {
+            throw ReturnException(result_val);
+        }
+        return;
     }
     
-    auto result = std::get<std::shared_ptr<ResultValue>>(result_val);
-    
-    if (result->isOk()) {
-        // Unwrap the Ok value and continue
-        last_value = result->value;
-    } else {
-        // Propagate the error by returning early with Err
-        throw ReturnException(result_val);
+    // Handle Option types (Some → unwrap, None → propagate)
+    if (std::holds_alternative<std::shared_ptr<OptionValue>>(result_val)) {
+        auto opt = std::get<std::shared_ptr<OptionValue>>(result_val);
+        if (opt->isSome()) {
+            last_value = opt->value;
+        } else {
+            // Propagate None by returning early
+            throw ReturnException(result_val);
+        }
+        return;
     }
+    
+    throw RuntimeError("? operator can only be used with Result or Option types");
+}
+
+// Move expression: move expr
+void Interpreter::visitMoveExpr(MoveExpr& expr) {
+    // For now, just evaluate the operand
+    // In a full implementation, this would transfer ownership
+    // For now, we just evaluate and return the value
+    evaluateExpr(*expr.operand);
 }
 
 // Stringify expression: stringify(expr) for macros
@@ -11596,6 +12322,20 @@ void Interpreter::visitStringifyExpr(StringifyExpr& expr) {
     }
 }
 
+// F-string expression: f"hello {name} you are {age}"
+void Interpreter::visitFStringExpr(FStringExpr& expr) {
+    std::string result;
+    for (auto& segment : expr.segments) {
+        if (!segment.is_expr) {
+            result += segment.text;
+        } else {
+            Value val = evaluateExpr(*segment.expr);
+            result += valueToString(val);
+        }
+    }
+    last_value = result;
+}
+
 // Macro declaration
 void Interpreter::visitMacroDecl(MacroDecl& stmt) {
     // For now, macros are stored but not expanded
@@ -11604,6 +12344,44 @@ void Interpreter::visitMacroDecl(MacroDecl& stmt) {
     
     // Store macro name in environment as a marker
     environment->define(stmt.name, std::string("<macro>"));
+}
+
+void Interpreter::visitUnsafeStmt(UnsafeStmt& stmt) {
+    // Execute all statements in the unsafe block
+    // In the future, this could disable certain safety checks
+    for (auto& s : stmt.body) {
+        s->accept(*this);
+    }
+}
+
+void Interpreter::visitExtendDecl(ExtendDecl& stmt) {
+    std::string type_name = stmt.type_name;
+    
+    // Register each method in the extension registry
+    for (auto& method_ast : stmt.methods) {
+        auto func = std::make_shared<Function>(
+            method_ast->name,
+            method_ast->parameters,
+            method_ast->return_type,
+            &method_ast->body,
+            environment
+        );
+        
+        // Handle decorators on extension methods
+        for (auto& dec : method_ast->decorators) {
+            Value decorator_val = environment->get(dec.name);
+            if (std::holds_alternative<std::string>(decorator_val)) {
+                std::string d = std::get<std::string>(decorator_val);
+                if (d == "__builtin_staticmethod__") {
+                    func->params.erase(func->params.begin());
+                } else if (d == "__builtin_classmethod__") {
+                    // classmethod — keep self-like first param
+                }
+            }
+        }
+        
+        extensions[type_name][method_ast->name] = func;
+    }
 }
 
 // Trait method lookup

@@ -1,0 +1,25 @@
+import fs
+
+print("=== File System Module Demo ===")
+
+print("cwd exists:", fs_exists("."))
+print("is_dir('.')", fs_is_dir("."))
+print("is_file('hello.spp')", fs_is_file("hello.spp"))
+
+ok = fs_write_file("/tmp/sapphire_fs_test.txt", "Hello from Sapphire FS!")
+print("write ok:", ok)
+
+data = fs_read_file("/tmp/sapphire_fs_test.txt")
+print("read back:", data)
+
+abs = fs_abs_path("/tmp/sapphire_fs_test.txt")
+print("abs path:", abs)
+
+del_ok = fs_delete("/tmp/sapphire_fs_test.txt")
+print("deleted:", del_ok)
+
+print("exists after delete:", fs_exists("/tmp/sapphire_fs_test.txt"))
+
+mkdir_ok = fs_create_dir("/tmp/sapphire_fs_test_dir")
+print("mkdir:", mkdir_ok)
+print("is_dir after mkdir:", fs_is_dir("/tmp/sapphire_fs_test_dir"))

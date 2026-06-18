@@ -1,7 +1,7 @@
 ;;; sapphire-mode.el --- Major mode for the Sapphire programming language
 
 ;; Author: Sapphire Language Team
-;; Version: 1.0-beta.7
+;; Version: 1.0-beta.8
 ;; Keywords: languages sapphire
 ;; URL: https://sapphire-lang.org
 

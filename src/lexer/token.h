@@ -55,6 +55,12 @@ enum class TokenType {
     CASE,
     DEFAULT,
     MACRO,
+    EXTEND,
+    UNSAFE,
+    MOVE,
+    OWN,
+    BORROW,
+    MUT,
     
     // Operators
     PLUS,
@@ -89,6 +95,7 @@ enum class TokenType {
     ARROW,
     CHANNEL_SEND,  // <- for channel send
     QUESTION,
+    EXCLAMATION,  // ! for try!/not-equal
     AT,  // @ for decorators
     
     // Special
@@ -96,7 +103,8 @@ enum class TokenType {
     INDENT,
     DEDENT,
     END_OF_FILE,
-    INVALID
+    INVALID,
+    FSTRING  // f"..." - f-string with interpolation
 };
 
 struct Token {

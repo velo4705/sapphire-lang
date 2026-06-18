@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Sapphire Playground - Try Sapphire in your browser">
+    <meta property="og:title" content="Sapphire Playground 💎">
+    <meta property="og:description" content="Try Sapphire right in your browser — no install needed.">
+    <meta property="og:image" content="https://sapphire-lang.org/sapphire-icon.svg">
+    <meta property="og:url" content="https://sapphire-lang.org/playground">
+    <meta property="og:type" content="website">
     <title>Sapphire Playground 💎</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=beta6">
     <link rel="stylesheet" href="style.css">
@@ -20,6 +25,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/mode/simple.js"></script>
+    <script src="theme.js"></script>
 </head>
 <body>
     <!-- Nav -->
@@ -27,21 +33,27 @@
         <nav class="nav">
             <div class="nav-content">
                 <div class="nav-left">
-                    <a href="index.html" style="display:flex;align-items:center;gap:0.6rem;text-decoration:none;">
+                    <a href="index.html" class="nav-home-link">
                         <img src="sapphire-icon.svg" alt="Sapphire" class="nav-logo">
                         <span class="nav-name">Sapphire</span>
-                        <span class="nav-badge">beta.7</span>
+                        <span class="nav-badge">beta.8</span>
                     </a>
                 </div>
-                <div class="nav-center">
+                <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+                    <span></span><span></span><span></span>
+                </button>
+                <div class="nav-center" id="navCenter">
                     <a href="index.html#features">Features</a>
                     <a href="index.html#examples">Examples</a>
+                    <a href="index.html#comparison">Comparison</a>
                     <a href="https://github.com/velo4705/sapphire-lang/tree/main/docs" target="_blank">Docs</a>
+                    <a href="errors/ERRORS.html">Errors</a>
                     <a href="index.html#download">Download</a>
                 </div>
                 <div class="nav-right">
                     <a href="playground.html" class="nav-playground" style="color: var(--cyan);">▶ Playground</a>
                     <a href="https://github.com/velo4705/sapphire-lang" class="nav-github-btn">GitHub</a>
+                    <button id="theme-toggle" class="theme-toggle" aria-label="Switch theme">🌙</button>
                 </div>
             </div>
         </nav>
@@ -71,6 +83,10 @@
                     <li class="example-item" data-example="decorators">Decorators</li>
                     <li class="example-item" data-example="classes">Classes</li>
                     <li class="example-item" data-example="oop">OOP / Inheritance</li>
+                    <li class="example-item" data-example="sorting">Sorting</li>
+                    <li class="example-item" data-example="generics">Generics</li>
+                    <li class="example-item" data-example="traits">Traits</li>
+                    <li class="example-item" data-example="channels">Channels</li>
                 </ul>
             </aside>
 
@@ -85,13 +101,18 @@
                             <span id="currentFile">hello.spp</span>
                         </span>
                         <div class="editor-actions">
-                            <button class="btn-icon" id="btnCopy" title="Copy code">⎘ Copy</button>
-                            <button class="btn-icon" id="btnClear" title="Clear output">✕ Clear</button>
-                            <button class="btn-run" id="btnRun">▶ Run</button>
+                            <button class="btn-icon" id="btnShare" title="Share code" aria-label="Share code">🔗 Share</button>
+                            <button class="btn-icon" id="btnCopy" title="Copy code" aria-label="Copy code">⎘ Copy</button>
+                            <button class="btn-icon" id="btnClear" title="Clear output" aria-label="Clear output">✕ Clear</button>
+                            <button class="btn-run" id="btnRun">▶ Run <span class="shortcut-hint">Ctrl+Enter</span></button>
                         </div>
                     </div>
                     <div id="editor-container">
                         <textarea id="editor"></textarea>
+                    </div>
+                    <div class="status-bar" id="statusBar">
+                        <span id="statusCursor">Ln 1, Col 1</span>
+                        <span id="statusChars">0 chars</span>
                     </div>
                 </div>
 
@@ -101,7 +122,7 @@
                         <span class="output-status" id="outputStatus"></span>
                     </div>
                     <div class="output-body" id="output">
-                        <span class="output-hint">Press ▶ Run to execute your code.</span>
+                        <span class="output-hint">Press <strong>▶ Run</strong> or <strong>Ctrl+Enter</strong> (<strong>Cmd+Enter</strong> on Mac) to execute your code.</span>
                     </div>
                 </div>
             </div>
@@ -120,7 +141,7 @@
                 <div>
                     <img src="sapphire-icon.svg" alt="Sapphire" class="footer-logo">
                     <div class="footer-brand">Sapphire</div>
-                    <div class="footer-tagline">Fast as C. Easy as Python.</div>
+                    <div class="footer-tagline">Fast. Simple. Powerful.</div>
                 </div>
                 <div>
                     <h4>Resources</h4>

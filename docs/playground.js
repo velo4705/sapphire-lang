@@ -269,6 +269,92 @@ print(circ.area())`,
 153.937910`
     },
 
+    sorting: {
+        file: 'sorting.spp',
+        code: `fn sort(arr):
+    i = 0
+    while i < len(arr):
+        j = i + 1
+        while j < len(arr):
+            if arr[i] > arr[j]:
+                tmp = arr[i]
+                arr[i] = arr[j]
+                arr[j] = tmp
+            j = j + 1
+        i = i + 1
+
+nums = [5, 2, 8, 1, 9, 3]
+sort(nums)
+print(nums)
+print(nums[0])
+print(nums[5])`,
+        output: `[1, 2, 3, 5, 8, 9]
+1
+9`
+    },
+
+    generics: {
+        file: 'generics.spp',
+        code: `fn identity[T](x):
+    return x
+
+fn swap[T](a, b):
+    return (b, a)
+
+print(identity[int](42))
+print(identity[str]("hello"))
+let (x, y) = swap(1, 2)
+print(x)
+print(y)`,
+        output: `42
+hello
+2
+1`
+    },
+
+    traits: {
+        file: 'traits.spp',
+        code: `trait Describable:
+    fn describe(self) -> String
+
+class Person:
+    fn __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+impl Describable for Person:
+    fn describe(self):
+        return self.name + " is " + self.age + " years old"
+
+fn print_description[T: Describable](item):
+    print(item.describe())
+
+alice = Person("Alice", 30)
+print_description(alice)`,
+        output: `Alice is 30 years old`
+    },
+
+    channels: {
+        file: 'channels.spp',
+        code: `ch = Channel[int]()
+fn producer():
+    ch.send(10)
+    ch.send(20)
+    ch.send(30)
+
+fn consumer():
+    for msg in ch:
+        print(msg)
+
+async producer()
+async consumer()
+print("done")`,
+        output: `10
+20
+30
+done`
+    },
+
     fizzbuzz: {
         file: 'fizzbuzz.spp',
         code: `fn fizzbuzz(n):
@@ -305,9 +391,20 @@ FizzBuzz`
 // ─── CodeMirror setup ────────────────────────────────────────────────────────
 let editor;
 
+function updateStatusBar() {
+    if (!editor) return;
+    const cursor = editor.getCursor();
+    const code = editor.getValue();
+    document.getElementById('statusCursor').textContent =
+        'Ln ' + (cursor.line + 1) + ', Col ' + (cursor.ch + 1);
+    document.getElementById('statusChars').textContent =
+        code.length + ' chars' + ' | ' + editor.lineCount() + ' lines';
+}
+
 function initEditor(code) {
     if (editor) {
         editor.setValue(code);
+        updateStatusBar();
         return;
     }
     editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
@@ -326,7 +423,10 @@ function initEditor(code) {
             'Tab': (cm) => cm.execCommand('insertSoftTab')
         }
     });
+    editor.on('cursorActivity', updateStatusBar);
+    editor.on('change', updateStatusBar);
     editor.setValue(code);
+    updateStatusBar();
 }
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -350,6 +450,7 @@ function loadExample(key) {
 // ─── Run simulation ──────────────────────────────────────────────────────────
 function runCode() {
     const btn = document.getElementById('btnRun');
+    const t0 = performance.now();
     btn.classList.add('running');
     btn.textContent = '⏳ Running...';
     setOutput('', 'running');
@@ -357,8 +458,9 @@ function runCode() {
     setTimeout(() => {
         const code = editor.getValue().trim();
         const result = simulate(code);
+        const elapsed = ((performance.now() - t0) / 1000).toFixed(3);
 
-        setOutput(result.output, result.error ? 'error' : 'ok');
+        setOutput(result.output, result.error ? 'error' : 'ok', elapsed);
         btn.classList.remove('running');
         btn.textContent = '▶ Run';
     }, 400);
@@ -402,12 +504,12 @@ function simulateGeneric(code) {
     };
 }
 
-function setOutput(text, status) {
+function setOutput(text, status, elapsed) {
     const out = document.getElementById('output');
     const statusEl = document.getElementById('outputStatus');
 
     if (!text) {
-        out.innerHTML = '<span class="output-hint">Press ▶ Run to execute your code.</span>';
+        out.innerHTML = '<span class="output-hint">Press <strong>▶ Run</strong> or <strong>Ctrl+Enter</strong> to execute your code.</span>';
         statusEl.textContent = '';
         statusEl.className = 'output-status';
         return;
@@ -423,7 +525,11 @@ function setOutput(text, status) {
         statusEl.className = 'output-status running';
     } else {
         out.textContent = text;
-        statusEl.textContent = 'success';
+        let label = 'success';
+        if (elapsed) {
+            label += ' (' + elapsed + 's)';
+        }
+        statusEl.textContent = label;
         statusEl.className = 'output-status ok';
     }
 }
@@ -437,6 +543,20 @@ document.addEventListener('DOMContentLoaded', () => {
     initEditor('');
     document.getElementById('currentFile').textContent = 'main.spp';
 
+    // Keyboard navigation for example list
+    const exampleList = document.getElementById('exampleList');
+    const items = exampleList.querySelectorAll('.example-item');
+    items.forEach((item, index) => {
+        item.setAttribute('tabindex', '0');
+        item.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                currentExample = item.dataset.example;
+                loadExample(item.dataset.example);
+            }
+        });
+    });
+
     document.getElementById('exampleList').addEventListener('click', (e) => {
         const item = e.target.closest('.example-item');
         if (item) {
@@ -444,6 +564,32 @@ document.addEventListener('DOMContentLoaded', () => {
             loadExample(item.dataset.example);
         }
     });
+
+    // Keyboard shortcut hint
+    const runBtn = document.getElementById('btnRun');
+    runBtn.title = 'Run (Ctrl+Enter)';
+    const copyBtn = document.getElementById('btnCopy');
+    copyBtn.setAttribute('aria-label', 'Copy code to clipboard');
+    const clearBtn = document.getElementById('btnClear');
+    clearBtn.setAttribute('aria-label', 'Clear output');
+    const shareBtn = document.getElementById('btnShare');
+    shareBtn.setAttribute('aria-label', 'Share code');
+
+    // Hamburger menu
+    const hamburger = document.getElementById('hamburger');
+    const navCenter = document.getElementById('navCenter');
+    if (hamburger && navCenter) {
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navCenter.classList.toggle('open');
+        });
+        navCenter.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                hamburger.classList.remove('active');
+                navCenter.classList.remove('open');
+            });
+        });
+    }
 
     document.getElementById('btnRun').addEventListener('click', runCode);
 
@@ -457,5 +603,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btnClear').addEventListener('click', () => {
         setOutput('', '');
+    });
+
+    document.getElementById('btnShare').addEventListener('click', () => {
+        const code = editor.getValue();
+        const url = window.location.origin + window.location.pathname + '?code=' + encodeURIComponent(code);
+        if (navigator.share) {
+            navigator.share({ title: 'Sapphire Playground', text: code, url: url });
+        } else {
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = document.getElementById('btnShare');
+                btn.textContent = '✓ Copied';
+                setTimeout(() => { btn.textContent = '🔗 Share'; }, 1500);
+            });
+        }
     });
 });

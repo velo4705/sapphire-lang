@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "../lexer/lexer.h"
 #include "../error/error_reporter.h"
 #include <iostream>
 
@@ -58,6 +59,15 @@ bool Parser::isAtEnd() const {
 bool Parser::check(TokenType type) const {
     if (isAtEnd()) return false;
     return peek().type == type;
+}
+
+bool Parser::checkNext(TokenType type) const {
+    if (current + 1 >= tokens.size()) return false;
+    return tokens[current + 1].type == type;
+}
+
+bool Parser::isKeyword(TokenType type) const {
+    return type >= TokenType::LET && type <= TokenType::MUT;
 }
 
 bool Parser::match(const std::vector<TokenType>& types) {
@@ -153,6 +163,12 @@ std::unique_ptr<Stmt> Parser::declaration() {
         }
         return implBlock();
     }
+    if (match({TokenType::EXTEND})) {
+        if (!decorators.empty()) {
+            throw error(previous(), "Decorators cannot be applied to extend blocks");
+        }
+        return extendDeclaration();
+    }
     if (match({TokenType::IMPORT, TokenType::FROM})) {
         if (!decorators.empty()) {
             throw error(previous(), "Decorators cannot be applied to import statements");
@@ -167,8 +183,17 @@ std::unique_ptr<Stmt> Parser::declaration() {
     return statement();
 }
 
+Ownership Parser::parseOwnership() {
+    if (match({TokenType::OWN})) return Ownership::OWN;
+    if (match({TokenType::BORROW})) return Ownership::BORROW;
+    if (match({TokenType::MUT})) return Ownership::MUT;
+    return Ownership::NONE;
+}
+
 std::unique_ptr<Stmt> Parser::varDeclaration() {
     bool is_const = previous().type == TokenType::CONST;
+    
+    Ownership ownership = parseOwnership();
     
     Token name = consumeToken(TokenType::IDENTIFIER, "Expected variable name");
     
@@ -186,7 +211,7 @@ std::unique_ptr<Stmt> Parser::varDeclaration() {
     skipNewlines();
     
     return std::make_unique<VarDeclStmt>(name.lexeme, type_name, 
-                                         std::move(initializer), is_const);
+                                         std::move(initializer), is_const, ownership);
 }
 
 std::unique_ptr<Stmt> Parser::functionDeclaration(std::vector<Decorator> decorators) {
@@ -199,9 +224,10 @@ std::unique_ptr<Stmt> Parser::functionDeclaration(std::vector<Decorator> decorat
     
     consume(TokenType::LPAREN, "Expected '(' after function name");
     
-    std::vector<std::pair<std::string, std::string>> parameters;
+    std::vector<Param> parameters;
     if (!check(TokenType::RPAREN)) {
         do {
+            Ownership ownership = parseOwnership();
             Token param_name = consumeToken(TokenType::IDENTIFIER, "Expected parameter name");
             std::string param_type;
             
@@ -210,7 +236,7 @@ std::unique_ptr<Stmt> Parser::functionDeclaration(std::vector<Decorator> decorat
                 param_type = type.lexeme;
             }
             
-            parameters.push_back({param_name.lexeme, param_type});
+            parameters.push_back(Param(param_name.lexeme, param_type, ownership));
         } while (match({TokenType::COMMA}));
     }
     
@@ -311,10 +337,26 @@ std::unique_ptr<Stmt> Parser::statement() {
     if (match({TokenType::IF})) return ifStatement();
     if (match({TokenType::WHILE})) return whileStatement();
     if (match({TokenType::FOR})) return forStatement();
-    if (match({TokenType::TRY})) return tryStatement();
+    // try!(expr) — check before consuming TRY for tryStatement
+    if (check(TokenType::TRY) && checkNext(TokenType::EXCLAMATION)) {
+        // fall through to expressionStatement
+    } else if (match({TokenType::TRY})) {
+        return tryStatement();
+    }
     if (match({TokenType::THROW})) return throwStatement();
     if (match({TokenType::SELECT})) return selectStatement();
     if (match({TokenType::GO})) return goStatement();
+    if (match({TokenType::BREAK})) {
+        skipNewlines();
+        return std::make_unique<BreakStmt>();
+    }
+    if (match({TokenType::CONTINUE})) {
+        skipNewlines();
+        return std::make_unique<ContinueStmt>();
+    }
+    if (match({TokenType::UNSAFE})) {
+        return unsafeStatement();
+    }
     
     return exprStatement();
 }
@@ -516,6 +558,12 @@ std::unique_ptr<Expr> Parser::unary() {
         return std::make_unique<ChannelReceiveExpr>(std::move(channel));
     }
     
+    // Move expression: move expr
+    if (match({TokenType::MOVE})) {
+        auto operand = unary();
+        return std::make_unique<MoveExpr>(std::move(operand));
+    }
+    
     if (match({TokenType::NOT, TokenType::MINUS})) {
         std::string op = previous().lexeme;
         auto right = unary();
@@ -556,8 +604,13 @@ std::unique_ptr<Expr> Parser::call() {
             consume(TokenType::RBRACKET, "Expected ']' after index");
             expr = std::make_unique<IndexExpr>(std::move(expr), std::move(index));
         } else if (match({TokenType::DOT})) {
-            Token name = consumeToken(TokenType::IDENTIFIER, "Expected property name after '.'");
-            expr = std::make_unique<GetExpr>(std::move(expr), name.lexeme);
+            // Accept any identifier or keyword as a property name
+            if (check({TokenType::IDENTIFIER}) || isKeyword(peek().type)) {
+                Token name = advance();
+                expr = std::make_unique<GetExpr>(std::move(expr), name.lexeme);
+            } else {
+                throw error(peek(), "Expected property name after '.'");
+            }
         } else if (match({TokenType::QUESTION})) {
             // ? operator for error propagation
             expr = std::make_unique<TryExpr>(std::move(expr));
@@ -598,6 +651,15 @@ std::unique_ptr<Expr> Parser::primary() {
         return matchExpression();
     }
     
+    // try!(expr) for error propagation
+    if (match({TokenType::TRY})) {
+        consume(TokenType::EXCLAMATION, "Expected '!' after 'try'");
+        consume(TokenType::LPAREN, "Expected '(' after 'try!'");
+        auto expr = expression();
+        consume(TokenType::RPAREN, "Expected ')' after try! argument");
+        return std::make_unique<TryExpr>(std::move(expr));
+    }
+    
     if (match({TokenType::TRUE})) {
         return std::make_unique<LiteralExpr>(LiteralExpr::Type::BOOLEAN, "true");
     }
@@ -616,6 +678,10 @@ std::unique_ptr<Expr> Parser::primary() {
     }
     if (match({TokenType::STRING})) {
         return std::make_unique<LiteralExpr>(LiteralExpr::Type::STRING, previous().lexeme);
+    }
+    
+    if (match({TokenType::FSTRING})) {
+        return parseFString(previous().lexeme);
     }
     
     if (match({TokenType::IDENTIFIER})) {
@@ -741,6 +807,32 @@ std::unique_ptr<Stmt> Parser::tryStatement() {
     return std::make_unique<TryStmt>(std::move(try_body),
                                      std::move(catch_clauses),
                                      std::move(finally_body));
+}
+
+// Unsafe block: unsafe { ... }
+std::unique_ptr<Stmt> Parser::unsafeStatement() {
+    consume(TokenType::LBRACE, "Expected '{' after 'unsafe'");
+    skipNewlines();
+    
+    // Handle optional INDENT (from indentation-based block style)
+    if (check(TokenType::INDENT)) {
+        advance();
+    }
+    
+    std::vector<std::unique_ptr<Stmt>> body_statements;
+    while (!check(TokenType::RBRACE) && !check(TokenType::DEDENT) && !check(TokenType::END_OF_FILE)) {
+        body_statements.push_back(declaration());
+        skipNewlines();
+    }
+    
+    // Handle optional DEDENT
+    if (check(TokenType::DEDENT)) {
+        advance();
+    }
+    
+    consume(TokenType::RBRACE, "Expected '}' after unsafe block");
+    
+    return std::make_unique<UnsafeStmt>(std::move(body_statements));
 }
 
 std::unique_ptr<Stmt> Parser::throwStatement() {
@@ -1134,9 +1226,10 @@ std::unique_ptr<Stmt> Parser::traitDeclaration() {
             consume(TokenType::LPAREN, "Expected '(' after method name");
             
             // Parse parameters
-            std::vector<std::pair<std::string, std::string>> parameters;
+            std::vector<Param> parameters;
             if (!check(TokenType::RPAREN)) {
                 do {
+                    Ownership ownership = parseOwnership();
                     Token param_name = consumeToken(TokenType::IDENTIFIER, "Expected parameter name");
                     std::string param_type;
                     
@@ -1145,7 +1238,7 @@ std::unique_ptr<Stmt> Parser::traitDeclaration() {
                         param_type = type_token.lexeme;
                     }
                     
-                    parameters.emplace_back(param_name.lexeme, param_type);
+                    parameters.emplace_back(param_name.lexeme, param_type, ownership);
                 } while (match({TokenType::COMMA}));
             }
             
@@ -1186,6 +1279,29 @@ std::unique_ptr<Stmt> Parser::traitDeclaration() {
     return std::make_unique<TraitDecl>(name, super_traits, std::move(methods));
 }
 
+// Extend declaration: extend TypeName: fn method...
+std::unique_ptr<Stmt> Parser::extendDeclaration() {
+    Token type_token = consumeToken(TokenType::IDENTIFIER, "Expected type name after 'extend'");
+    std::string type_name = type_token.lexeme;
+    
+    consume(TokenType::COLON, "Expected ':' after type name");
+    skipNewlines();
+    consume(TokenType::INDENT, "Expected indented block for extend body");
+    
+    auto body_statements = block();
+    std::vector<std::unique_ptr<FunctionDecl>> methods;
+    
+    for (auto& stmt : body_statements) {
+        if (auto* fn = dynamic_cast<FunctionDecl*>(stmt.get())) {
+            std::unique_ptr<FunctionDecl> method(fn);
+            stmt.release();
+            methods.push_back(std::move(method));
+        }
+    }
+    
+    return std::make_unique<ExtendDecl>(type_name, std::move(methods));
+}
+
 // Impl block parsing
 
 std::unique_ptr<Stmt> Parser::implBlock() {
@@ -1222,9 +1338,10 @@ std::unique_ptr<Stmt> Parser::implBlock() {
             consume(TokenType::LPAREN, "Expected '(' after method name");
             
             // Parse parameters
-            std::vector<std::pair<std::string, std::string>> parameters;
+            std::vector<Param> parameters;
             if (!check(TokenType::RPAREN)) {
                 do {
+                    Ownership ownership = parseOwnership();
                     Token param_name = consumeToken(TokenType::IDENTIFIER, "Expected parameter name");
                     std::string param_type;
                     
@@ -1233,7 +1350,7 @@ std::unique_ptr<Stmt> Parser::implBlock() {
                         param_type = type_token.lexeme;
                     }
                     
-                    parameters.emplace_back(param_name.lexeme, param_type);
+                    parameters.emplace_back(param_name.lexeme, param_type, ownership);
                 } while (match({TokenType::COMMA}));
             }
             
@@ -1300,6 +1417,88 @@ std::vector<Decorator> Parser::parseDecorators() {
     }
     
     return decorators;
+}
+
+std::unique_ptr<Expr> Parser::parseFString(const std::string& raw_content) {
+    std::vector<FStringSegment> segments;
+    std::string current_text;
+    size_t i = 0;
+    int brace_depth = 0;
+    std::string expr_content;
+    
+    while (i < raw_content.size()) {
+        char c = raw_content[i];
+        
+        if (c == '{' && i + 1 < raw_content.size() && raw_content[i + 1] == '{') {
+            // Escaped brace {{ -> literal {
+            current_text += '{';
+            i += 2;
+        } else if (c == '}' && i + 1 < raw_content.size() && raw_content[i + 1] == '}') {
+            // Escaped brace }} -> literal }
+            current_text += '}';
+            i += 2;
+        } else if (c == '{') {
+            // Start of expression - flush current text
+            if (!current_text.empty()) {
+                segments.emplace_back(current_text);
+                current_text.clear();
+            }
+            brace_depth = 1;
+            expr_content.clear();
+            i++;
+            // Collect expression content, tracking brace depth
+            while (i < raw_content.size() && brace_depth > 0) {
+                if (raw_content[i] == '{') {
+                    brace_depth++;
+                } else if (raw_content[i] == '}') {
+                    brace_depth--;
+                    if (brace_depth == 0) {
+                        break;
+                    }
+                }
+                expr_content += raw_content[i];
+                i++;
+            }
+            i++; // skip closing }
+            
+            if (!expr_content.empty()) {
+                // Parse the expression using a sub-lexer and sub-parser
+                // Trim whitespace
+                size_t start = expr_content.find_first_not_of(" \t");
+                size_t end = expr_content.find_last_not_of(" \t");
+                std::string trimmed = (start != std::string::npos) 
+                    ? expr_content.substr(start, end - start + 1) 
+                    : "";
+                
+                if (!trimmed.empty()) {
+                    try {
+                        Lexer expr_lexer(trimmed);
+                        auto expr_tokens = expr_lexer.tokenize();
+                        // Remove EOF token for parsing
+                        if (!expr_tokens.empty() && expr_tokens.back().type == TokenType::END_OF_FILE) {
+                            expr_tokens.pop_back();
+                        }
+                        Parser expr_parser(expr_tokens, trimmed, filename);
+                        auto expr = expr_parser.expression();
+                        segments.emplace_back(std::move(expr));
+                    } catch (const std::exception&) {
+                        // If parsing fails, treat as literal
+                        segments.emplace_back(std::string("{") + expr_content + "}");
+                    }
+                }
+            }
+        } else {
+            current_text += c;
+            i++;
+        }
+    }
+    
+    // Flush remaining text
+    if (!current_text.empty()) {
+        segments.emplace_back(current_text);
+    }
+    
+    return std::make_unique<FStringExpr>(std::move(segments));
 }
 
 } // namespace sapphire

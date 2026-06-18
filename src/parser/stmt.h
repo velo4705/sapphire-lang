@@ -11,6 +11,24 @@ namespace sapphire {
 // Forward declarations
 class StmtVisitor;
 
+// Ownership annotation for variables and parameters
+enum class Ownership {
+    NONE,
+    OWN,
+    BORROW,
+    MUT
+};
+
+// Function parameter with optional ownership annotation
+struct Param {
+    std::string name;
+    std::string type;
+    Ownership ownership;
+    
+    Param(const std::string& n, const std::string& t = "", Ownership o = Ownership::NONE)
+        : name(n), type(t), ownership(o) {}
+};
+
 // Decorator for functions and classes
 class Decorator {
 public:
@@ -49,10 +67,12 @@ public:
     std::string type;
     std::unique_ptr<Expr> initializer;
     bool is_const;
+    Ownership ownership;
     
     VarDeclStmt(const std::string& n, const std::string& t, 
-                std::unique_ptr<Expr> init, bool is_const = false)
-        : name(n), type(t), initializer(std::move(init)), is_const(is_const) {}
+                std::unique_ptr<Expr> init, bool is_const = false,
+                Ownership o = Ownership::NONE)
+        : name(n), type(t), initializer(std::move(init)), is_const(is_const), ownership(o) {}
     void accept(StmtVisitor& visitor) override;
 };
 
@@ -61,7 +81,7 @@ class FunctionDecl : public Stmt {
 public:
     std::vector<Decorator> decorators;
     std::string name;
-    std::vector<std::pair<std::string, std::string>> parameters;
+    std::vector<Param> parameters;
     std::string return_type;
     std::vector<std::unique_ptr<Stmt>> body;
     bool is_async;
@@ -70,7 +90,7 @@ public:
     
     FunctionDecl(std::vector<Decorator> decs,
                  const std::string& n,
-                 std::vector<std::pair<std::string, std::string>> params,
+                 std::vector<Param> params,
                  const std::string& ret_type,
                  std::vector<std::unique_ptr<Stmt>> b,
                  bool async = false)
@@ -298,6 +318,44 @@ public:
     void accept(StmtVisitor& visitor) override;
 };
 
+// Break statement
+class BreakStmt : public Stmt {
+public:
+    BreakStmt() = default;
+    void accept(StmtVisitor& visitor) override;
+};
+
+// Continue statement
+class ContinueStmt : public Stmt {
+public:
+    ContinueStmt() = default;
+    void accept(StmtVisitor& visitor) override;
+};
+
+// Unsafe block: unsafe { ... }
+class UnsafeStmt : public Stmt {
+public:
+    std::vector<std::unique_ptr<Stmt>> body;
+    
+    explicit UnsafeStmt(std::vector<std::unique_ptr<Stmt>> b)
+        : body(std::move(b)) {}
+    
+    void accept(StmtVisitor& visitor) override;
+};
+
+// Extend declaration: extend TypeName: fn method...
+class ExtendDecl : public Stmt {
+public:
+    std::string type_name;
+    std::vector<std::unique_ptr<FunctionDecl>> methods;
+    
+    ExtendDecl(const std::string& type,
+               std::vector<std::unique_ptr<FunctionDecl>> meths)
+        : type_name(type), methods(std::move(meths)) {}
+    
+    void accept(StmtVisitor& visitor) override;
+};
+
 // Visitor interface
 class StmtVisitor {
 public:
@@ -309,6 +367,9 @@ public:
     virtual void visitIfStmt(IfStmt& stmt) = 0;
     virtual void visitWhileStmt(WhileStmt& stmt) = 0;
     virtual void visitForStmt(ForStmt& stmt) = 0;
+    virtual void visitBreakStmt(BreakStmt& stmt) = 0;
+    virtual void visitContinueStmt(ContinueStmt& stmt) = 0;
+    virtual void visitUnsafeStmt(UnsafeStmt& stmt) = 0;
     virtual void visitTryStmt(TryStmt& stmt) = 0;
     virtual void visitThrowStmt(ThrowStmt& stmt) = 0;
     virtual void visitClassDecl(ClassDecl& stmt) = 0;
@@ -319,6 +380,7 @@ public:
     virtual void visitSelectStmt(SelectStmt& stmt) = 0;
     virtual void visitGoStmt(GoStmt& stmt) = 0;
     virtual void visitMacroDecl(MacroDecl& stmt) = 0;
+    virtual void visitExtendDecl(ExtendDecl& stmt) = 0;
 };
 
 } // namespace sapphire

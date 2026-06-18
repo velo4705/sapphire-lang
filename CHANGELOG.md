@@ -2,6 +2,14 @@
 
 All notable changes to Sapphire will be documented in this file.
 
+## [1.0-beta.8] - 2026-06-17
+
+### 🚀 v1.0-beta.8 - Stability & Language Gaps
+
+Improved REPL with multiline input support for functions and classes. Added runtime stack traces with file/line info. Enhanced error reporting with `--explain` support for runtime errors. Added `break`/`continue` in loops. Implemented `for x in list:` iteration over arrays, strings, and maps. Added `str.trim()` and `str.contains()` string methods. Added f-string expressions with full expression interpolation.
+
+---
+
 ## [1.0-beta.7] - 2026-03-24
 
 ### 🚀 v1.0-beta.7 - Input & Editor Polish

@@ -297,7 +297,7 @@ code --install-extension editors/vscode/sapphire-lang.vsix
 
 ## Status
 
-**Version:** 1.0-beta.7  
+**Version:** 1.0-beta.8  
 **Tests:** 34/34 passing (100%)  
 **Libraries:** 18/18 complete  
 **Status:** Production ready ✅

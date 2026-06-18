@@ -238,6 +238,8 @@ extern "C" {
     void http_server_destroy(void* server);
     void http_server_get(void* server, const char* path, void* handler);
     void http_server_post(void* server, const char* path, void* handler);
+    void http_server_put(void* server, const char* path, void* handler);
+    void http_server_delete(void* server, const char* path, void* handler);
     int http_server_start(void* server);
     void http_server_stop(void* server);
     

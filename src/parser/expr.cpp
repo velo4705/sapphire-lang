@@ -74,4 +74,12 @@ void StringifyExpr::accept(ExprVisitor& visitor) {
     visitor.visitStringifyExpr(*this);
 }
 
+void MoveExpr::accept(ExprVisitor& visitor) {
+    visitor.visitMoveExpr(*this);
+}
+
+void FStringExpr::accept(ExprVisitor& visitor) {
+    visitor.visitFStringExpr(*this);
+}
+
 } // namespace sapphire

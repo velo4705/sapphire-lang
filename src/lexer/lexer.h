@@ -28,6 +28,7 @@ private:
     Token makeToken(TokenType type, const std::string& lexeme);
     void scanNumber();
     void scanString(char quote);
+    void scanFString(char quote);
     void scanIdentifier();
 
 public:

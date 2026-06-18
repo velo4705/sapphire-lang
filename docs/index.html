@@ -4,6 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Sapphire - A modern programming language that's as fast as C and as easy as Python">
+    <meta property="og:title" content="Sapphire 💎 - A Simple Programming Language">
+    <meta property="og:description" content="A modern programming language designed for performance, safety, and developer happiness.">
+    <meta property="og:image" content="https://sapphire-lang.org/sapphire-icon.svg">
+    <meta property="og:url" content="https://sapphire-lang.org">
+    <meta property="og:type" content="website">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Sapphire",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Linux, macOS, Windows",
+        "description": "A modern programming language designed for performance, safety, and developer happiness.",
+        "url": "https://sapphire-lang.org",
+        "downloadUrl": "https://github.com/velo4705/sapphire-lang",
+        "programmingLanguage": "C++, Sapphire"
+    }
+    </script>
     <title>Sapphire 💎 - A Simple Programming Language.</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=beta6">
     <link rel="alternate icon" type="image/svg+xml" href="favicon.svg?v=beta6" sizes="any">
@@ -11,6 +29,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="theme.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 </head>
 <body>
@@ -21,11 +40,15 @@
                 <div class="nav-left">
                     <img src="sapphire-icon.svg" alt="Sapphire" class="nav-logo">
                     <span class="nav-name">Sapphire</span>
-                    <span class="nav-badge">beta.7</span>
+                    <span class="nav-badge">beta.8</span>
                 </div>
-                <div class="nav-center">
+                <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+                    <span></span><span></span><span></span>
+                </button>
+                <div class="nav-center" id="navCenter">
                     <a href="#features">Features</a>
                     <a href="#examples">Examples</a>
+                    <a href="#comparison">Comparison</a>    
                     <a href="https://github.com/velo4705/sapphire-lang/tree/main/docs" target="_blank">Docs</a>
                     <a href="errors/ERRORS.html">Errors</a>
                     <a href="#download">Download</a>
@@ -33,6 +56,7 @@
                 <div class="nav-right">
                     <a href="playground.html" class="nav-playground">▶ Playground</a>
                     <a href="https://github.com/velo4705/sapphire-lang" class="nav-github-btn">GitHub</a>
+                    <button id="theme-toggle" class="theme-toggle" aria-label="Switch theme">🌙</button>
                 </div>
             </div>
         </nav>
@@ -117,6 +141,34 @@
         </div>
     </section>
 
+    <div class="section-divider"></div>
+
+    <!-- Who is Sapphire for -->
+    <section id="audience" class="section section-alt">
+        <div class="container">
+            <h2 class="section-title">Who Is Sapphire For?</h2>
+            <div class="grid-3">
+                <div class="card" style="text-align:center;">
+                    <div class="card-icon">👨‍💻</div>
+                    <h3>Systems Programmers</h3>
+                    <p>You want C-level performance with Rust-level safety, but a syntax that doesn't get in your way.</p>
+                </div>
+                <div class="card" style="text-align:center;">
+                    <div class="card-icon">🧪</div>
+                    <h3>Language Enthusiasts</h3>
+                    <p>You love exploring new language designs, compilers, and runtimes. Sapphire is built for experimentation.</p>
+                </div>
+                <div class="card" style="text-align:center;">
+                    <div class="card-icon">🚀</div>
+                    <h3>Startup Engineers</h3>
+                    <p>You need a single language that handles web, data, systems, and scripting without context switching.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"></div>
+
     <!-- Examples -->
     <section id="examples" class="section section-alt">
         <div class="container">
@@ -166,14 +218,87 @@
         </div>
     </section>
 
+    <div class="section-divider"></div>
+
+    <!-- Comparison Table -->
+    <section id="comparison" class="section section-delayed">
+        <div class="container">
+            <h2 class="section-title">Sapphire vs. The Rest</h2>
+            <table class="compare-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Sapphire</th>
+                        <th>Python</th>
+                        <th>Rust</th>
+                        <th>Go</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Compiled speed</td>
+                        <td><span class="check">✓</span> ~C</td>
+                        <td><span class="cross">✗</span> Slow</td>
+                        <td><span class="check">✓</span> Fast</td>
+                        <td><span class="check">✓</span> Fast</td>
+                    </tr>
+                    <tr>
+                        <td>Memory safety</td>
+                        <td><span class="check">✓</span> Ownership</td>
+                        <td><span class="partial">◐</span> GC</td>
+                        <td><span class="check">✓</span> Borrowing</td>
+                        <td><span class="partial">◐</span> GC</td>
+                    </tr>
+                    <tr>
+                        <td>Syntax simplicity</td>
+                        <td><span class="check">✓</span> Minimal</td>
+                        <td><span class="check">✓</span> Simple</td>
+                        <td><span class="cross">✗</span> Verbose</td>
+                        <td><span class="check">✓</span> Simple</td>
+                    </tr>
+                    <tr>
+                        <td>Built-in async</td>
+                        <td><span class="check">✓</span> Native</td>
+                        <td><span class="partial">◐</span> Library</td>
+                        <td><span class="partial">◐</span> Traits</td>
+                        <td><span class="check">✓</span> Goroutines</td>
+                    </tr>
+                    <tr>
+                        <td>Pattern matching</td>
+                        <td><span class="check">✓</span> Built-in</td>
+                        <td><span class="partial">◐</span> match/case</td>
+                        <td><span class="check">✓</span> match</td>
+                        <td><span class="cross">✗</span> None</td>
+                    </tr>
+                    <tr>
+                        <td>GUI toolkits</td>
+                        <td><span class="check">✓</span> Native</td>
+                        <td><span class="check">✓</span> tkinter</td>
+                        <td><span class="partial">◐</span> Bindings</td>
+                        <td><span class="cross">✗</span> Limited</td>
+                    </tr>
+                    <tr>
+                        <td>Package manager</td>
+                        <td><span class="check">✓</span> spm</td>
+                        <td><span class="check">✓</span> pip</td>
+                        <td><span class="check">✓</span> Cargo</td>
+                        <td><span class="check">✓</span> go mod</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="section-divider"></div>
+
     <!-- Playground CTA -->
-    <section class="section" style="padding: 4rem 0;">
-        <div class="container" style="text-align: center;">
+    <section class="section cta-section">
+        <div class="container">
             <h2 class="section-title">Try It Now</h2>
-            <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 2.5rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+            <p class="cta-text">
                 No install needed. Write and run Sapphire code right in your browser.
             </p>
-            <a href="playground.html" class="hero-btn" style="font-size: 1rem; padding: 1rem 2.5rem;">
+            <a href="playground.html" class="hero-btn cta-btn">
                 ▶ Open Playground
             </a>
         </div>
@@ -228,7 +353,7 @@
                 <div>
                     <img src="sapphire-icon.svg" alt="Sapphire" class="footer-logo">
                     <div class="footer-brand">Sapphire</div>
-                    <div class="footer-tagline">Fast as C. Easy as Python.</div>
+                    <div class="footer-tagline">Fast. Simple. Powerful.</div>
                 </div>
                 <div>
                     <h4>Resources</h4>

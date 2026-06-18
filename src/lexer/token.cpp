@@ -53,6 +53,12 @@ std::string tokenTypeToString(TokenType type) {
         {TokenType::CASE, "CASE"},
         {TokenType::DEFAULT, "DEFAULT"},
         {TokenType::MACRO, "MACRO"},
+        {TokenType::EXTEND, "EXTEND"},
+        {TokenType::UNSAFE, "UNSAFE"},
+        {TokenType::MOVE, "MOVE"},
+        {TokenType::OWN, "OWN"},
+        {TokenType::BORROW, "BORROW"},
+        {TokenType::MUT, "MUT"},
         
         // Operators
         {TokenType::PLUS, "PLUS"},
@@ -87,6 +93,7 @@ std::string tokenTypeToString(TokenType type) {
         {TokenType::ARROW, "ARROW"},
         {TokenType::CHANNEL_SEND, "CHANNEL_SEND"},
         {TokenType::QUESTION, "QUESTION"},
+        {TokenType::EXCLAMATION, "EXCLAMATION"},
         {TokenType::AT, "AT"},
         
         // Special

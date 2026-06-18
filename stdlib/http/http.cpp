@@ -772,6 +772,20 @@ extern "C" {
         });
     }
     
+    void http_server_put(void* server, const char* path, void* /* handler */) {
+        auto* srv = static_cast<HTTPServer*>(server);
+        srv->put(path, [](const HTTPRequest& /* req */, HTTPResponse& res) {
+            res.set_text("PUT response from C API");
+        });
+    }
+    
+    void http_server_delete(void* server, const char* path, void* /* handler */) {
+        auto* srv = static_cast<HTTPServer*>(server);
+        srv->delete_(path, [](const HTTPRequest& /* req */, HTTPResponse& res) {
+            res.set_text("DELETE response from C API");
+        });
+    }
+    
     int http_server_start(void* server) {
         return static_cast<HTTPServer*>(server)->start() ? 1 : 0;
     }

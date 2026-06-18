@@ -1,0 +1,38 @@
+import http
+
+print("=== HTTP Module Demo ===")
+
+# URL utilities
+print("\n1. URL Encoding/Decoding")
+let original = "Hello World! @#$%"
+let encoded = http_url_encode(original)
+let decoded = http_url_decode(encoded)
+print("Original:", original)
+print("Encoded:", encoded)
+print("Decoded:", decoded)
+
+# HTML escaping
+print("\n2. HTML Escaping")
+let html = "<script>alert('xss')</script>"
+let escaped = http_html_escape(html)
+print("Input:", html)
+print("Escaped:", escaped)
+
+# HTTP client
+print("\n3. HTTP Client")
+let client = http_client_create()
+print("Client created")
+
+# HTTP server with all route types
+print("\n4. HTTP Server Routes")
+let server = http_server_create(8080)
+http_server_get(server, "/api/status", "status_handler")
+http_server_post(server, "/api/data", "data_handler")
+http_server_put(server, "/api/update", "update_handler")
+http_server_delete(server, "/api/remove", "delete_handler")
+print("Routes: GET /api/status")
+print("Routes: POST /api/data")
+print("Routes: PUT /api/update")
+print("Routes: DELETE /api/remove")
+
+print("\n=== HTTP Demo Complete ===")

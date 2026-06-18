@@ -919,7 +919,7 @@ void LLVMCodeGen::generateFunctionDecl(FunctionDecl* stmt) {
     // Allocate parameters
     unsigned idx = 0;
     for (auto& arg : func->args()) {
-        const std::string& param_name = stmt->parameters[idx].first;
+        const std::string& param_name = stmt->parameters[idx].name;
         arg.setName(param_name);
         
         // Allocate stack space for parameter

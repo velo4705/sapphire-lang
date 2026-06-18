@@ -35,6 +35,7 @@ SOURCES = $(SRCDIR)/main.cpp \
           $(SRCDIR)/types/type.cpp \
           $(SRCDIR)/semantic/type_checker.cpp \
           $(SRCDIR)/semantic/type_inference.cpp \
+          $(SRCDIR)/formatter/formatter.cpp \
           stdlib/collections/array.cpp \
           stdlib/math/math.cpp \
           stdlib/io/csv.cpp \
@@ -89,13 +90,17 @@ SOURCES = $(SRCDIR)/main.cpp \
           stdlib/ecosystem/ecosystem.cpp \
           stdlib/ecosystem/ecosystem_capi.cpp \
           stdlib/database/database.cpp \
-          stdlib/database/database_capi.cpp
+          stdlib/database/database_capi.cpp \
+          stdlib/fs/fs.cpp
 
 # Add codegen if LLVM is available
 ifdef LLVM_CONFIG
     SOURCES += $(SRCDIR)/codegen/llvm_codegen.cpp \
                $(SRCDIR)/codegen/codegen_impl.cpp
 endif
+
+# Runtime support files (defined before use in prerequisites)
+RUNTIME_OBJECTS = build/obj/runtime/refcount.o
 
 OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 
@@ -352,11 +357,17 @@ quick: $(TARGET)
 	@echo ""
 	@echo "$(LLVM_STATUS)"
 
-$(TARGET): $(OBJECTS)
+$(TARGET): $(OBJECTS) $(RUNTIME_OBJECTS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Runtime support files
+
+build/obj/runtime/%.o: runtime/%.cpp runtime/%.h
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
@@ -369,6 +380,7 @@ $(OBJDIR):
 	mkdir -p $(OBJDIR)/semantic
 	mkdir -p $(OBJDIR)/error
 	mkdir -p $(OBJDIR)/codegen
+	mkdir -p $(OBJDIR)/runtime
 
 run: quick
 	@echo "Running examples/hello.spp..."
